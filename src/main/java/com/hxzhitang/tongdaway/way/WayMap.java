@@ -73,7 +73,7 @@ public class WayMap {
         BlockPos[] selfNodes = spawnWayNode(seed, x, z);
         List<BlockPos[]> otherNodes = new ArrayList<>();
         for (BlockPos pos : selfNodes) {
-            intersection.put(pos, "§d路口");
+            intersection.put(pos, "§dCross");
         }
         for (int px = -1; px < 2; px += 2) {
             BlockPos[] otherNodeX = spawnWayNode(seed, x+px, z);

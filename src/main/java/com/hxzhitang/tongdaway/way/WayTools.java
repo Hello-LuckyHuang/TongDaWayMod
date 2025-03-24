@@ -77,7 +77,7 @@ public class WayTools {
                         new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, -2, 1), true)
                 );
                 sign.setScrollText(
-                        "§d广告时间\n" + getNoteFromConfig(7),
+                        "§dAD Time\n" + getNoteFromConfig(7),
                         new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, -1, -1), true),
                         new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, -2, -1), true)
                 );
@@ -100,7 +100,7 @@ public class WayTools {
                             new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 1, 1), true)
                     );
                     sign.setScrollText(
-                            "§d广告时间\n" + getNoteFromConfig(7),
+                            "§dAD Time\n" + getNoteFromConfig(7),
                             new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 2, -1), true),
                             new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 1, -1), true)
                     );
@@ -120,7 +120,7 @@ public class WayTools {
                             new SignNotesSetBlockEntity.SignMetaData(new BlockPos(1, 1, 0), true)
                     );
                     sign.setScrollText(
-                            "§d广告时间\n" + getNoteFromConfig(7),
+                            "§dAD Time\n" + getNoteFromConfig(7),
                             new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 2, 1), true),
                             new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 1, 1), true)
                     );

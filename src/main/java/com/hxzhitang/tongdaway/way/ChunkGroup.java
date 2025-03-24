@@ -206,7 +206,7 @@ public class ChunkGroup implements Runnable {
     }
 
     /**
-     * 获取高度图，此部分计算地表高度代码参考自Taiterio的world preview
+     * 预获取高度图，此部分计算地表高度代码参考自Taiterio的world preview
      * 见https://github.com/caeruleusDraconis/world-preview
      * @param chunkPos 区块坐标
      * @param blockStride 采样步长，要16的约数

@@ -118,7 +118,7 @@ public class RegionWayMap {
     }
 
     //高度平滑方法
-    //逢山开路遇水搭桥
+    //逢山开路遇水搭桥(暂时不可用)
     private static List<double[]> heightAdjustment(List<int[]> path, double[][] heightMap) {
         List<double[]> adjustedHeightMap = new LinkedList<>();
         //记录每个点的高度，然后进行处理
