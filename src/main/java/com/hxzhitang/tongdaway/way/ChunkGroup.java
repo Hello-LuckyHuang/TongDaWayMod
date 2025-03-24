@@ -40,7 +40,7 @@ public class ChunkGroup implements Runnable {
     private final ThreadPoolExecutor heightMapLoadPoolExecutor;
     private boolean quickLoadHeightMap; //是否开启更多线程快速加载高度图
 
-    public static final int blockStride = 4; // 采样步长,要16的约数
+    public static final int blockStride = 8; // 采样步长,要16的约数
 
     private final long seed;
 
@@ -96,7 +96,7 @@ public class ChunkGroup implements Runnable {
             return;
         }
 
-        long startTime = System.currentTimeMillis();
+//        long startTime = System.currentTimeMillis();
         //寻找村庄，生成高度图
         var dimensionType = worldGenRegion.dimensionType();
 
@@ -201,13 +201,13 @@ public class ChunkGroup implements Runnable {
         //将数据保存到磁盘
         data.putRegionWay(new RegionPos(this.x, this.z), regionWayMap);
 
-        long duration = System.currentTimeMillis() - startTime;
-        Tongdaway.LOGGER.info("Region {},{} Done! Way Nodes Num: {}, Quick Finish: {}, Use Time: {} ms", this.x, this.z, nodeNum, quickLoadHeightMap, duration);
+//        long duration = System.currentTimeMillis() - startTime;
+//        Tongdaway.LOGGER.info("Region {},{} Done! Way Nodes Num: {}, Quick Finish: {}, Use Time: {} ms", this.x, this.z, nodeNum, quickLoadHeightMap, duration);
     }
 
-
     /**
-     * 获取高度图，代码来自worldPreview Mod
+     * 获取高度图，此部分计算地表高度代码参考自Taiterio的world preview
+     * 见https://github.com/caeruleusDraconis/world-preview
      * @param chunkPos 区块坐标
      * @param blockStride 采样步长，要16的约数
      * @return 高度图
@@ -215,62 +215,65 @@ public class ChunkGroup implements Runnable {
     private HeightData[][] getHeight(ChunkPos chunkPos, int blockStride) {
         final NoiseSettings noiseSettings = noiseGeneratorSettings.noiseSettings();
         final NoiseChunk noiseChunk = getNoiseChunkFunc.getNoiseChunk(chunkPos, random);
-
-
         final Predicate<BlockState> predicate = Heightmap.Types.OCEAN_FLOOR_WG.isOpaque();
 
-        final BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-
-        final int cellWidth = noiseSettings.getCellWidth(); //cellWidth 4
-        final int cellHeight = noiseSettings.getCellHeight(); //cellHeight 8
-
+        final int cellWidth = noiseSettings.getCellWidth();
+        final int cellHeight = noiseSettings.getCellHeight();
         final int minY = noiseSettings.minY();
         final int maxY = minY + noiseSettings.height();
-        final int cellMinY = Mth.floorDiv(minY, noiseSettings.getCellHeight());
-        final int cellCountY = Mth.floorDiv(maxY - minY, noiseSettings.getCellHeight());
-        final int cellOffsetY = cellMinY - Mth.floorDiv(noiseSettings.minY(), noiseSettings.getCellHeight());
+        final int cellMinY = Mth.floorDiv(minY, cellHeight);
+        final int cellCountY = Mth.floorDiv(maxY - minY, cellHeight);
+        final int cellOffsetY = cellMinY - Mth.floorDiv(noiseSettings.minY(), cellHeight);
 
         final int minBlockX = chunkPos.getMinBlockX();
         final int minBlockZ = chunkPos.getMinBlockZ();
-        final int cellCountXZ = 16 / cellWidth; // 4
-        final int cellStrideXZ = 1;
-        final int todoArraySize = 1;
+        final int cellCountXZ = 16 / cellWidth;
 
-        noiseChunk.initializeForFirstCellX();
-
-        HeightData[][] result = new HeightData[16/blockStride][16/blockStride];
+        final int resultSize = 16 / blockStride;
+        HeightData[][] result = new HeightData[resultSize][resultSize];
 
         try {
-            // Iterate over cell X Z Y
-            for(int cellX = 0; cellX < cellCountXZ; cellX += cellStrideXZ) {
+            noiseChunk.initializeForFirstCellX();
+            for (int cellX = 0; cellX < cellCountXZ; cellX++) {
                 noiseChunk.advanceCellX(cellX);
 
-                for(int cellZ = 0; cellZ < cellCountXZ; cellZ += cellStrideXZ) {
+                for (int cellZ = 0; cellZ < cellCountXZ; cellZ++) {
+                    List<XZPair> positions = new LinkedList<>();
 
-                    List<XZPair> positions = new ArrayList<>(todoArraySize);
+                    // Precompute positions only for unpopulated result indices
                     for (int xInCell = 0; xInCell < cellWidth; xInCell += blockStride) {
                         for (int zInCell = 0; zInCell < cellWidth; zInCell += blockStride) {
                             int x = minBlockX + cellX * cellWidth + xInCell;
                             int z = minBlockZ + cellZ * cellWidth + zInCell;
-                            positions.add(new XZPair(
-                                    x, (double) xInCell / (double) cellWidth,
-                                    z, (double) zInCell / (double) cellWidth
-                            ));
+                            int i = (x - minBlockX) / blockStride;
+                            int j = (z - minBlockZ) / blockStride;
+
+                            if (result[i][j] == null) {
+                                positions.add(new XZPair(
+                                        x, (double) xInCell / cellWidth,
+                                        z, (double) zInCell / cellWidth,
+                                        i, j
+                                ));
+                            }
                         }
                     }
 
-                    for(int cellY = cellCountY - 1; cellY >= 0 && !positions.isEmpty(); --cellY) {
-                        noiseChunk.selectCellYZ(cellY + cellOffsetY, cellZ);
+                    // Early exit if all positions already filled
+                    if (positions.isEmpty()) continue;
 
-                        // Iterate over block in cell Y X Z
-                        for (int yInCell = cellHeight - 1; yInCell >= 0 && !positions.isEmpty(); --yInCell) {
-                            final int y = (cellMinY + cellY) * cellHeight + yInCell;
-                            noiseChunk.updateForY(y, (double) yInCell / (double) cellHeight);
+                    // Process Y layers from top to bottom
+                    Iterator<XZPair> iterator = positions.iterator();
+                    while (iterator.hasNext()) {
+                        XZPair curr = iterator.next();
+                        noiseChunk.updateForX(curr.x, curr.dX);
+                        noiseChunk.updateForZ(curr.z, curr.dZ);
 
-                            for (int idx = 0; idx < positions.size(); ++idx) {
-                                XZPair curr = positions.get(idx);
-                                noiseChunk.updateForX(curr.x, curr.dX);
-                                noiseChunk.updateForZ(curr.z, curr.dZ);
+                        for (int cellY = cellCountY - 1; cellY >= 0; cellY--) {
+                            noiseChunk.selectCellYZ(cellY + cellOffsetY, cellZ);
+
+                            for (int yInCell = cellHeight - 1; yInCell >= 0; yInCell -= 2) {
+                                final int y = (cellMinY + cellY) * cellHeight + yInCell;
+                                noiseChunk.updateForY(y, (double) yInCell / cellHeight);
 
                                 BlockState blockState = ((NoiseChunkAccessor) noiseChunk).invokeGetInterpolatedState();
                                 if (blockState == null) {
@@ -278,27 +281,54 @@ public class ChunkGroup implements Runnable {
                                 }
 
                                 if (predicate.test(blockState)) {
-                                    mutableBlockPos.set(curr.x, 0, curr.z);
-                                    result[(curr.x - minBlockX) / blockStride][(curr.z - minBlockZ) / blockStride] = new HeightData(curr.x, y + 1, curr.z);
-//                                    System.out.println(" x:" + curr.x + " z:" + curr.z + " y:" + (y + 1));
-                                    positions.remove(idx--);
+                                    result[curr.i][curr.j] = new HeightData(curr.x, y + 1, curr.z);
+                                    iterator.remove();
                                 }
+
+                                if (positions.isEmpty()) break;
                             }
+                            if (positions.isEmpty()) break;
                         }
                     }
+
+
                 }
-                // Whatever this does, but it is required...
                 noiseChunk.swapSlices();
             }
         } finally {
             noiseChunk.stopInterpolation();
         }
 
+        // Fill remaining null positions with default height
+        for (int i = 0; i < resultSize; i++) {
+            for (int j = 0; j < resultSize; j++) {
+                if (result[i][j] == null) {
+                    int x = minBlockX + i * blockStride;
+                    int z = minBlockZ + j * blockStride;
+                    result[i][j] = new HeightData(x, minY, z);
+                }
+            }
+        }
+
         return result;
     }
 
-    private record XZPair(int x, double dX, int z, double dZ) {
-        // record
+    private static class XZPair {
+        final int x;
+        final double dX;
+        final int z;
+        final double dZ;
+        final int i;
+        final int j;
+
+        XZPair(int x, double dX, int z, double dZ, int i, int j) {
+            this.x = x;
+            this.dX = dX;
+            this.z = z;
+            this.dZ = dZ;
+            this.i = i;
+            this.j = j;
+        }
     }
 
     private record HeightData(int x, int y, int z) {

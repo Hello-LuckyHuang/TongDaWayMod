@@ -55,7 +55,7 @@ public class RegionWayMap {
         }
 
         //生成路灯图和路牌图
-        int spacing = 16; //路灯(牌)生成间隔
+        int spacing = 24; //路灯(牌)生成间隔
         for (int i = 1; i < path.size() / spacing; i++) {
             int[] point = path.get(i*spacing);
             int bx = point[0];

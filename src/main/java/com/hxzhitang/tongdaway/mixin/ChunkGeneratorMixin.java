@@ -60,9 +60,9 @@ public abstract class ChunkGeneratorMixin {
                         if (Objects.equals(p.pointType(), "way")) {
                             WayTools.buildWay(p_223087_, p_223088_, realPos0, p.pointType());
                         } else if (Objects.equals(p.pointType(), "intersection")) {
-                            WayTools.buildIntersection(p_223087_, p, p_223088_, realPos1);
+                            WayTools.buildIntersection(p_223087_, p, p_223088_, realPos0);
                         } else if (Objects.equals(p.pointType(), "streetlight")) {
-                            WayTools.buildStreetlight(p_223087_, p, p_223088_, realPos1);
+                            WayTools.buildStreetlight(p_223087_, p, p_223088_, realPos0);
                         } else if (Objects.equals(p.pointType(), "road_signs")) {
                             WayTools.buildWaySign(p_223087_, p, realPos1);
                         }
