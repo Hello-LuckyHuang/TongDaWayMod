@@ -1,0 +1,39 @@
+plugins {
+    id 'multiloader-common'
+    id 'org.spongepowered.gradle.vanilla' version '0.2.1-SNAPSHOT'
+}
+
+minecraft {
+    version(minecraft_version)
+    def aw = file("src/main/resources/${mod_id}.accesswidener")
+    if(aw.exists()){
+        accessWideners(aw)
+    }
+}
+
+dependencies {
+    compileOnly group:'org.spongepowered', name:'mixin', version:'0.8.5'
+    compileOnly "com.google.auto.service:auto-service:1.1.1"
+    annotationProcessor "com.google.auto.service:auto-service:1.1.1"
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+
+tasks.withType(JavaCompile).configureEach {
+    // 英语国家只需要使用ASCII就行了，中文国家考虑的就要多了
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
