@@ -15,7 +15,7 @@ public class GenerateStructure {
     public static void generate(WorldGenLevel worldGenLevel, BlockPos pos, String structureId) {
         ServerLevel serverLevel = worldGenLevel.getLevel();
         StructureTemplateManager manager = serverLevel.getStructureManager();
-        manager.get(ResourceLocation.fromNamespaceAndPath(Tongdaway.MODID, structureId)).ifPresent(template -> {
+        manager.get(new ResourceLocation(Tongdaway.MODID, structureId)).ifPresent(template -> {
             // 生成结构
             template.placeInWorld(
                     worldGenLevel,

@@ -163,7 +163,7 @@ public class WayTools {
         boolean isWater = biome.is(Tags.Biomes.IS_WATER);
         if (isWater) {
             //河流上允许生成
-            if (!biome.is(ResourceLocation.parse("minecraft:river")))
+            if (!biome.is(new ResourceLocation("minecraft:river")))
                 return;
         }
 
