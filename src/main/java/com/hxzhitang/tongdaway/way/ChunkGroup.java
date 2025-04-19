@@ -99,6 +99,7 @@ public class ChunkGroup implements Runnable {
 //        long startTime = System.currentTimeMillis();
         //寻找村庄，生成高度图
         var dimensionType = worldGenRegion.dimensionType();
+        int seaLevel = worldGenRegion.getSeaLevel();
 
         LevelHeightAccessor levelHeightAccessor = LevelHeightAccessor.create(dimensionType.minY(), dimensionType.height());
 
@@ -126,7 +127,7 @@ public class ChunkGroup implements Runnable {
 
                     heightMapLoadPoolExecutor.submit(() -> {
                         //计算高度图
-                        var heightMapTile = getHeight(protoChunk.getPos(), blockStride);
+                        var heightMapTile = getHeight(protoChunk.getPos(), blockStride, seaLevel);
                         for (int px = 0; px < 16/blockStride; px++) {
                             for (int pz = 0; pz < 16 / blockStride; pz++) {
                                 int x = finalGx * 16 / blockStride + px;
@@ -190,7 +191,7 @@ public class ChunkGroup implements Runnable {
             int[] end = {pBx, pBz};
             double[][] expandedHeightMap = ExpandImage.expandImage(heightMap, blockStride);
             double[][] slopeImg = ImageGradient.calculateGradient(expandedHeightMap);
-            List<int[]> path = OptimizedAStarEightDirections.findMinimumCostPath(slopeImg, start, end, (x, y) -> heightMap[x/blockStride][y/blockStride] <= 63 ? 5000.0 : 0.0);
+            List<int[]> path = OptimizedAStarEightDirections.findMinimumCostPath(slopeImg, start, end, (x, y) -> heightMap[x/blockStride][y/blockStride] <= seaLevel ? 5000.0 : 0.0);
             //输入计算路径和原计算高度图（非插值后）,为路线生成提供依据
             regionWayMap.putWayMap(path, expandedHeightMap, wayName);
 
@@ -210,9 +211,10 @@ public class ChunkGroup implements Runnable {
      * 见https://github.com/caeruleusDraconis/world-preview
      * @param chunkPos 区块坐标
      * @param blockStride 采样步长，要16的约数
+     * @param seaLevel 海平面高度，在海平面高度以下则不再进行高度图生成。
      * @return 高度图
      */
-    private HeightData[][] getHeight(ChunkPos chunkPos, int blockStride) {
+    private HeightData[][] getHeight(ChunkPos chunkPos, int blockStride, int seaLevel) {
         final NoiseSettings noiseSettings = noiseGeneratorSettings.noiseSettings();
         final NoiseChunk noiseChunk = getNoiseChunkFunc.getNoiseChunk(chunkPos, random);
         final Predicate<BlockState> predicate = Heightmap.Types.OCEAN_FLOOR_WG.isOpaque();
@@ -282,6 +284,11 @@ public class ChunkGroup implements Runnable {
 
                                 if (predicate.test(blockState)) {
                                     result[curr.i][curr.j] = new HeightData(curr.x, y + 1, curr.z);
+                                    iterator.remove();
+                                }
+
+                                if (y < seaLevel - 4) {
+                                    result[curr.i][curr.j] = new HeightData(curr.x, seaLevel - 4, curr.z);
                                     iterator.remove();
                                 }
 
