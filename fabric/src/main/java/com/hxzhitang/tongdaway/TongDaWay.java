@@ -7,12 +7,13 @@ import com.hxzhitang.tongdaway.util.blocks.ModBlocks;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static com.mojang.text2speech.Narrator.LOGGER;
 
 public class TongDaWay implements ModInitializer {
     public static final String MODID = Common.MODID;
@@ -35,11 +36,16 @@ public class TongDaWay implements ModInitializer {
         }
         configFile = configDir.resolve("tongdaway_config.json");
 
-        Config config = loadConfig(configFile.toString());
-        ConfigVar.features = config.getFeatures();
-        ConfigVar.notes = config.getNotes();
-        ConfigVar.alwaysConnectVillage = config.isConnectVillage();
-        ConfigVar.connectFeaturesNum = config.getConnectFeaturesNum();
+        try {
+            Config config = loadConfig(configFile.toString());
+            ConfigVar.features = config.getFeatures();
+            ConfigVar.notes = config.getNotes();
+            LOGGER.info(ConfigVar.notes.toString());
+            ConfigVar.alwaysConnectVillage = config.isConnectVillage();
+            ConfigVar.connectFeaturesNum = config.getConnectFeaturesNum();
+        } catch (Exception e) {
+            LOGGER.error("TongDaWay Mod: Can't load config file!");
+        }
     }
 
     /**
@@ -57,10 +63,11 @@ public class TongDaWay implements ModInitializer {
             return defaultConfig;
         }
 
-        try (FileReader reader = new FileReader(filePath)) {
+        try (InputStreamReader reader = new InputStreamReader(
+                new FileInputStream(filePath), StandardCharsets.UTF_8)) {
             return gson.fromJson(reader, Config.class);
         } catch (IOException e) {
-            System.err.println("Error loading config file: " + e.getMessage());
+            LOGGER.error("Error loading config file: {}", e.getMessage());
             return new Config(); // 返回默认配置
         }
     }
@@ -74,7 +81,7 @@ public class TongDaWay implements ModInitializer {
         try (FileWriter writer = new FileWriter(filePath)) {
             gson.toJson(config, writer);
         } catch (IOException e) {
-            System.err.println("Error saving config file: " + e.getMessage());
+            LOGGER.error("Error saving config file: {}", e.getMessage());
         }
     }
 }
