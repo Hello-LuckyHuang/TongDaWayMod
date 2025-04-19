@@ -16,25 +16,26 @@ public class Config {
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> FEATURES_STRINGS = BUILDER
             .comment("A list of features to ways connect.")
-            .comment("·????????????????????")
+            .comment("路可以连接特征的名单。")
             .comment("example: \"minecraft:village\"")
             .defineListAllowEmpty("features", List.of("minecraft:village"), Config::validateString);
 
     private static final ModConfigSpec.BooleanValue ALWAYS_CONNECT_VILLAGE = BUILDER
             .comment("Way always connect village?")
-            .comment("·???????????????")
+            .comment("路是否总是连接村庄？")
             .define("connectVillage", true);
 
     private static final ModConfigSpec.IntValue CONNECT_FEATURES_NUM = BUILDER
             .comment("A maximum number of features to connect in a region.")
-            .comment("??????????????????????????")
+            .comment("一个区域内连接特征的最大数量")
             .defineInRange("connectFeaturesNum", 3, 0, 10);
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> NOTES_IN_WAY_SIGN = BUILDER
             .comment("Other information on the way sign.")
-            .comment("·??????????????")
+            .comment("路牌上的其他信息。")
             .comment("example: \"[HELLO]Welcome to Minecraft World!\"")
             .defineListAllowEmpty("notes", List.of("[HELLO]Welcome to Minecraft World!"), Config::validateString);
+
 
     static final ModConfigSpec SPEC = BUILDER.build();
 

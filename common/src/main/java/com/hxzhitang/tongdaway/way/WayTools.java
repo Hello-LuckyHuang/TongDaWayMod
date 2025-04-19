@@ -21,7 +21,7 @@ import static com.hxzhitang.tongdaway.Common.CHUNK_GROUP_SIZE;
 public class WayTools {
     public static void buildWaySign(WorldGenLevel worldGenLevel, RegionWayMap.WayPoint p, BlockPos realPos) {
         var biome = worldGenLevel.getBiome(realPos);
-        boolean isWater = BiomeTag.TAG.isDry(biome);
+        boolean isWater = BiomeTag.TAG.isOcean(biome) || BiomeTag.TAG.isRiver(biome);
 
         if (!isWater) {
             GenerateStructure.generate(worldGenLevel, realPos, "way_signs/way_sign");
@@ -60,7 +60,7 @@ public class WayTools {
         int x = realPos.getX();
         int z = realPos.getZ();
         var biome = worldGenLevel.getBiome(realPos);
-        boolean isWater = BiomeTag.TAG.isWet(biome);
+        boolean isWater = BiomeTag.TAG.isOcean(biome) || BiomeTag.TAG.isRiver(biome);
         if (isWater) {
             GenerateStructure.generate(worldGenLevel, realPos.offset(-7, -1, -7), "intersection/sea_cross");
             BlockEntity blockEntity = worldGenLevel.getBlockEntity(realPos.offset(-1, 3, -1));
@@ -126,7 +126,7 @@ public class WayTools {
         int y = realPos.getY();
         int z = realPos.getZ();
         var biome = worldGenLevel.getBiome(realPos);
-        boolean isWater = BiomeTag.TAG.isWet(biome);
+        boolean isWater = BiomeTag.TAG.isOcean(biome) || BiomeTag.TAG.isRiver(biome);
         if (isWater) {
             if (p.pointId() % 2 == 1)
                 GenerateStructure.generate(worldGenLevel, new BlockPos(x, y - 1, z), "streetlight/buoy0");
@@ -146,11 +146,9 @@ public class WayTools {
         final BlockState wetWayBlock = Blocks.OAK_PLANKS.defaultBlockState();
 
         var biome = worldGenLevel.getBiome(realPos);
-        boolean isWater = BiomeTag.TAG.isWet(biome);
-        if (isWater) {
-            if (!biome.is(new ResourceLocation("minecraft:river")))
-                return;
-        }
+        //海上不生成路面
+        if (BiomeTag.TAG.isOcean(biome))
+            return;
 
         if (wayType.equals("way")) {
             int[][] dirs = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};

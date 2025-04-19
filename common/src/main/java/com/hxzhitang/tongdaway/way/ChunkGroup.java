@@ -102,6 +102,7 @@ public class ChunkGroup implements Runnable {
         long startTime = System.currentTimeMillis();
         //寻找村庄，生成高度图
         var dimensionType = worldGenRegion.dimensionType();
+        int seaLevel = worldGenRegion.getSeaLevel();
 
         LevelHeightAccessor levelHeightAccessor = LevelHeightAccessor.create(dimensionType.minY(), dimensionType.height());
 
@@ -129,7 +130,7 @@ public class ChunkGroup implements Runnable {
 
                     heightMapLoadPoolExecutor.submit(() -> {
                         //计算高度图
-                        var heightMapTile = getHeight(protoChunk.getPos(), blockStride);
+                        var heightMapTile = getHeight(protoChunk.getPos(), blockStride, seaLevel);
                         for (int px = 0; px < 16/blockStride; px++) {
                             for (int pz = 0; pz < 16 / blockStride; pz++) {
                                 int x = finalGx * 16 / blockStride + px;
@@ -205,7 +206,7 @@ public class ChunkGroup implements Runnable {
         data.putRegionWay(new RegionPos(this.x, this.z), regionWayMap);
 
         long duration = System.currentTimeMillis() - startTime;
-        Common.LOGGER.info("Region {},{} Done! Way Nodes Num: {}, Quick Finish: {}, Use Time: {} ms", this.x, this.z, nodeNum, quickLoadHeightMap, duration);
+//        Common.LOGGER.info("Region {},{} Done! Way Nodes Num: {}, Quick Finish: {}, Use Time: {} ms", this.x, this.z, nodeNum, quickLoadHeightMap, duration);
     }
 
     /**
@@ -215,7 +216,7 @@ public class ChunkGroup implements Runnable {
      * @param blockStride 采样步长，要16的约数
      * @return 高度图
      */
-    private HeightData[][] getHeight(ChunkPos chunkPos, int blockStride) {
+    private HeightData[][] getHeight(ChunkPos chunkPos, int blockStride, int seaLevel) {
         final NoiseSettings noiseSettings = noiseGeneratorSettings.noiseSettings();
         final NoiseChunk noiseChunk = getNoiseChunkFunc.getNoiseChunk(chunkPos, random);
         final Predicate<BlockState> predicate = Heightmap.Types.OCEAN_FLOOR_WG.isOpaque();
@@ -285,6 +286,11 @@ public class ChunkGroup implements Runnable {
 
                                 if (predicate.test(blockState)) {
                                     result[curr.i][curr.j] = new HeightData(curr.x, y + 1, curr.z);
+                                    iterator.remove();
+                                }
+
+                                if (y < seaLevel - 4) {
+                                    result[curr.i][curr.j] = new HeightData(curr.x, seaLevel - 4, curr.z);
                                     iterator.remove();
                                 }
 

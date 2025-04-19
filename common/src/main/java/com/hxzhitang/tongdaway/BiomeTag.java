@@ -18,5 +18,6 @@ public interface BiomeTag {
 
     boolean isDry(Holder<Biome> biome);
     boolean isCold(Holder<Biome> biome);
-    boolean isWet(Holder<Biome> biome);
+    boolean isOcean(Holder<Biome> biome);
+    boolean isRiver(Holder<Biome> biome);
 }

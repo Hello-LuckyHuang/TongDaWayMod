@@ -18,7 +18,12 @@ public final class FabricBiomeTag implements BiomeTag {
     }
 
     @Override
-    public boolean isWet(Holder<Biome> biome) {
-        return biome.is(ConventionalBiomeTags.IS_WET);
+    public boolean isOcean(Holder<Biome> biome) {
+        return biome.is(ConventionalBiomeTags.IS_OCEAN);
+    }
+
+    @Override
+    public boolean isRiver(Holder<Biome> biome) {
+        return biome.is(ConventionalBiomeTags.IS_RIVER);
     }
 }

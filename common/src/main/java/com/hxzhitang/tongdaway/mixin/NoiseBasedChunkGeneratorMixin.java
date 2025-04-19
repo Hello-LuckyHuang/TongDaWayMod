@@ -102,9 +102,15 @@ public abstract class NoiseBasedChunkGeneratorMixin extends ChunkGeneratorMixin 
                     }
                 }
             }
-            if (tongDaWay$chunkGroupsFuture.containsKey(regionPos) && tongDaWay$chunkGroupsFuture.get(regionPos).isDone()) {
-                tongDaWay$chunkGroupsFuture.remove(regionPos);
-                tongDaWay$chunkGroups.remove(regionPos);
+            //如果本区块组已经生成过路线图但线程还未移除，则移除线程。
+            if (tongDaWay$chunkGroupsFuture.containsKey(regionPos)) {
+                var feature = tongDaWay$chunkGroupsFuture.get(regionPos);
+                if (feature != null) {
+                    if (feature.isDone()) {
+                        tongDaWay$chunkGroupsFuture.remove(regionPos);
+                        tongDaWay$chunkGroups.remove(regionPos);
+                    }
+                }
             }
         }
     }

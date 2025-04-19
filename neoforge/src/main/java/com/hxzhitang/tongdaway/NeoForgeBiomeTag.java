@@ -18,7 +18,14 @@ public final class NeoForgeBiomeTag implements BiomeTag {
     }
 
     @Override
-    public boolean isWet(Holder<Biome> biome) {
-        return biome.is(Tags.Biomes.IS_WET);
+    public boolean isOcean(Holder<Biome> biome) {
+        return biome.is(Tags.Biomes.IS_OCEAN);
     }
+
+    @Override
+    public boolean isRiver(Holder<Biome> biome) {
+        return biome.is(Tags.Biomes.IS_RIVER);
+    }
+
+
 }
