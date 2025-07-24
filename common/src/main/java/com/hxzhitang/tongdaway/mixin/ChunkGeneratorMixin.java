@@ -50,6 +50,18 @@ public abstract class ChunkGeneratorMixin {
             if (tongDaWay$ChunkWays.containsKey(regionPos)) {
                 List<RegionWayMap.WayPoint> chunkWayMap = tongDaWay$ChunkWays.get(regionPos).getWayMap(p_223088_.getPos());
                 if (chunkWayMap != null) {
+                    // 路基
+                    for (RegionWayMap.WayPoint p : chunkWayMap) {
+                        int ix = p.pos().getX();
+                        int iz = p.pos().getZ();
+                        int cy = p.pos().getY();
+
+                        BlockPos realPos0 = new BlockPos(ix + 16 * x, cy, iz + 16 * z);
+                        if (Objects.equals(p.pointType(), "way")) {
+                            WayTools.wayFoundation(p_223087_, realPos0, p.pointCode());
+                        }
+                    }
+                    // 道路
                     for (RegionWayMap.WayPoint p : chunkWayMap) {
                         int ix = p.pos().getX();
                         int iz = p.pos().getZ();
@@ -59,13 +71,13 @@ public abstract class ChunkGeneratorMixin {
                         BlockPos realPos0 = new BlockPos(ix + 16 * x, cy, iz + 16 * z);
                         BlockPos realPos1 = new BlockPos(ix + 16 * x, h + 1, iz + 16 * z);
                         if (Objects.equals(p.pointType(), "way")) {
-                            WayTools.buildWay(p_223087_, p_223088_, realPos0, p.pointType());
+                            WayTools.buildWay(p_223087_, realPos0, p.pointCode());
                         } else if (Objects.equals(p.pointType(), "intersection")) {
                             WayTools.buildIntersection(p_223087_, p, p_223088_, realPos1);
                         } else if (Objects.equals(p.pointType(), "streetlight")) {
-                            WayTools.buildStreetlight(p_223087_, p, p_223088_, realPos1);
+                            WayTools.buildStreetlight(p_223087_, p, p_223088_, realPos0);
                         } else if (Objects.equals(p.pointType(), "road_signs")) {
-                            WayTools.buildWaySign(p_223087_, p, realPos1);
+                            WayTools.buildWaySign(p_223087_, p, realPos0);
                         }
                     }
                 }

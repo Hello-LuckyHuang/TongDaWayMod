@@ -40,7 +40,7 @@ public class TongDaWay implements ModInitializer {
             Config config = loadConfig(configFile.toString());
             ConfigVar.features = config.getFeatures();
             ConfigVar.notes = config.getNotes();
-            LOGGER.info(ConfigVar.notes.toString());
+            //LOGGER.info(ConfigVar.notes.toString());
             ConfigVar.alwaysConnectVillage = config.isConnectVillage();
             ConfigVar.connectFeaturesNum = config.getConnectFeaturesNum();
         } catch (Exception e) {
