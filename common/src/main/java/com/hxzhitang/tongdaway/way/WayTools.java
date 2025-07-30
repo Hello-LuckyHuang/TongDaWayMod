@@ -191,7 +191,7 @@ public class WayTools {
 
         if (realPos.getY() >= landH && realPos.getY() - landH <= 5) {
             // 高于地面
-            for (int j = 0; j <= 5; j++) {
+            for (int j = 0; j <= 3; j++) {
                 for (int i = -2 - j; i < 3 + j; i++) {
                     int y = realPos.getY() - j;
                     if (dx != 1) {
@@ -201,7 +201,8 @@ public class WayTools {
                         if (rh > y)
                             continue;
                         worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.GRASS_BLOCK.defaultBlockState(), 0);
-                    } else if (dz != 1) {
+                    }
+                    if (dz != 1) {
                         int x = realPos.getX() + i;
                         int z = realPos.getZ();
                         int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
@@ -212,8 +213,8 @@ public class WayTools {
                 }
             }
 
-            for (int i = -7; i < 8; i++) {
-                int ry = realPos.getY() - 6;
+            for (int i = -5; i < 6; i++) {
+                int ry = realPos.getY() - 4;
                 if (dx != 1) {
                     int x = realPos.getX();
                     int z = realPos.getZ() + i;
@@ -223,7 +224,8 @@ public class WayTools {
                     for (int y = 0; y > rh - ry - 2; y--) {
                         worldGenLevel.setBlock(new BlockPos(x, ry + y, z), Blocks.DIRT.defaultBlockState(), 0);
                     }
-                } else if (dz != 1) {
+                }
+                if (dz != 1) {
                     int x = realPos.getX() + i;
                     int z = realPos.getZ();
                     int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
@@ -243,7 +245,8 @@ public class WayTools {
                         int z = realPos.getZ() + i;
                         int y = realPos.getY() + j + 1;
                         worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
-                    } else if (dz != 1) {
+                    }
+                    if (dz != 1) {
                         int x = realPos.getX() + i;
                         int z = realPos.getZ();
                         int y = realPos.getY() + j + 1;
@@ -264,7 +267,8 @@ public class WayTools {
                     if (worldGenLevel.getBlockState(bPos).equals(Blocks.DIRT.defaultBlockState())) {
                         worldGenLevel.setBlock(bPos, Blocks.GRASS_BLOCK.defaultBlockState(), 0);
                     }
-                } else if (dz != 1) {
+                }
+                if (dz != 1) {
                     int x = realPos.getX() - 2 - j;
                     int z = realPos.getZ();
                     int y = realPos.getY() + j;
@@ -299,7 +303,8 @@ public class WayTools {
                         int z = realPos.getZ() + j;
                         int y = realPos.getY() + i + 1;
                         worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
-                    } else if (dz != 1) {
+                    }
+                    if (dz != 1) {
                         int x = realPos.getX() + j;
                         int z = realPos.getZ();
                         int y = realPos.getY() + i + 1;
