@@ -55,7 +55,7 @@ public class Tongdaway {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
-        LOGGER.info("HELLO, Welcome to use TongDaWay Mod!");
+//        LOGGER.info("HELLO, Welcome to use TongDaWay Mod!");
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent

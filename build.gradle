@@ -165,7 +165,6 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

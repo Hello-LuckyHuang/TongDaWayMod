@@ -193,7 +193,7 @@ public class ChunkGroup implements Runnable {
             double[][] slopeImg = ImageGradient.calculateGradient(expandedHeightMap);
             List<int[]> path = OptimizedAStarEightDirections.findMinimumCostPath(slopeImg, start, end, (x, y) -> heightMap[x/blockStride][y/blockStride] <= seaLevel ? 5000.0 : 0.0);
             //输入计算路径和原计算高度图（非插值后）,为路线生成提供依据
-            regionWayMap.putWayMap(path, expandedHeightMap, wayName);
+            regionWayMap.putWayMap(path, expandedHeightMap, seaLevel, wayName);
 
             nodeNum += path.size();
         }
