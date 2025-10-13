@@ -45,6 +45,20 @@ public class ImageGradient {
                 gradient[x][y] = Math.sqrt(gx * gx + gy * gy);
             }
         }
+        //复制梯度到边缘
+        for (int y = 1; y < height - 1; y++) {
+            gradient[0][y] = gradient[1][y];
+            gradient[width - 1][y] = gradient[width - 2][y];
+        }
+        for (int x = 1; x < width - 1; x++) {
+            gradient[x][0] = gradient[x][1];
+            gradient[x][height - 1] = gradient[x][height - 2];
+        }
+        // 处理四角
+        gradient[0][0] = gradient[1][1];
+        gradient[0][height - 1] = gradient[1][height - 2];
+        gradient[width - 1][0] = gradient[width - 2][1];
+        gradient[width - 1][height - 1] = gradient[width - 2][height - 2];
 
         return gradient;
     }

@@ -33,9 +33,9 @@ public abstract class NoiseBasedChunkGeneratorMixin extends ChunkGeneratorMixin 
     @Shadow @Final private Supplier<Aquifer.FluidPicker> globalFluidPicker;
 
     @Unique
-    public final Map<RegionPos, Future<?>> tongDaWay$chunkGroupsFuture = new HashMap<>();
+    public final Map<RegionPos, Future<?>> tongDaWay$chunkGroupsFuture = new ConcurrentHashMap<>();
     @Unique
-    public final Map<RegionPos, ChunkGroup> tongDaWay$chunkGroups = new HashMap<>();
+    public final Map<RegionPos, ChunkGroup> tongDaWay$chunkGroups = new ConcurrentHashMap<>();
     @Unique
     private final LinkedBlockingQueue<Runnable> tongDaWay$chunkGroupLoadQueue = new LinkedBlockingQueue<Runnable>(); //线程池
     @Unique
@@ -78,7 +78,8 @@ public abstract class NoiseBasedChunkGeneratorMixin extends ChunkGeneratorMixin 
                 }
                 //等待同区域的搜索和生成
                 try {
-                    tongDaWay$chunkGroupsFuture.get(regionPos).get();
+                    if (tongDaWay$chunkGroupsFuture.containsKey(regionPos))
+                        tongDaWay$chunkGroupsFuture.get(regionPos).get();
                 } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }

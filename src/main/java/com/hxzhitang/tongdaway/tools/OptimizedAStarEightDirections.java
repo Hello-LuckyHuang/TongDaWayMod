@@ -113,32 +113,4 @@ public class OptimizedAStarEightDirections {
     public interface AdditionalCostFunction {
         double cost(int x, int y);
     }
-
-    public static void main(String[] args) {
-        // 测试用例：1000x1000网格，对角线最优
-        int size = 1000;
-        double[][] grid = new double[size][size];
-        for (int i = 0; i < size; i++) Arrays.fill(grid[i], 1.0);
-
-        int[] start = {0, 0};
-        int[] end = {size - 1, size - 1};
-
-        long startTime = System.currentTimeMillis();
-        List<int[]> path = findMinimumCostPath(grid, start, end, (x, y) -> 0.0);
-        long duration = System.currentTimeMillis() - startTime;
-
-        System.out.println("路径长度: " + path.size());
-        System.out.println("计算耗时: " + duration + "ms");
-        if (!path.isEmpty()) {
-            double totalCost = 0;
-            int[] prev = start;
-            for (int[] point : path.subList(1, path.size())) {
-                boolean isDiagonal = (Math.abs(point[0] - prev[0]) + Math.abs(point[1] - prev[1])) == 2;
-                totalCost += isDiagonal ? grid[point[0]][point[1]] * Math.sqrt(2) : grid[point[0]][point[1]];
-                prev = point;
-            }
-            totalCost += grid[start[0]][start[1]];
-            System.out.printf("路径总损耗: %.2f\n", totalCost);
-        }
-    }
 }

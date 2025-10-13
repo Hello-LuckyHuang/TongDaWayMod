@@ -58,6 +58,8 @@ public abstract class ChunkGeneratorMixin {
                         BlockPos realPos0 = new BlockPos(ix + 16 * x, cy, iz + 16 * z);
                         if (Objects.equals(p.pointType(), "way")) {
                             WayTools.wayFoundation(p_223087_, realPos0, p.pointCode());
+                        } else if (Objects.equals(p.pointType(), "pier")) {
+                            WayTools.buildPier(p_223087_, realPos0);
                         }
                     }
                     // 道路

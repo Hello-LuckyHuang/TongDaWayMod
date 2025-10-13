@@ -27,8 +27,6 @@ public class Tongdaway {
 
     //以此为边长的区块组生成噪声图
     public static final int CHUNK_GROUP_SIZE = 32;
-    //区块组边缘缓冲区大小
-    public static final int CHUNK_GROUP_BUFFER = 0;
 
     public Tongdaway() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();

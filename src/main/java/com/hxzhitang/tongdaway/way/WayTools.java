@@ -5,10 +5,8 @@ import com.hxzhitang.tongdaway.structure.GenerateStructure;
 import com.hxzhitang.tongdaway.tools.TDWRandom;
 import com.hxzhitang.tongdaway.util.blocks.SignNotesSetBlockEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,6 +19,7 @@ import java.util.List;
 import java.util.Random;
 
 import static com.hxzhitang.tongdaway.Tongdaway.CHUNK_GROUP_SIZE;
+import static com.hxzhitang.tongdaway.way.ChunkGroup.MAX_HEIGHT;
 
 public class WayTools {
     final static BlockState landWayBlock = Blocks.DIRT_PATH.defaultBlockState();
@@ -28,13 +27,31 @@ public class WayTools {
     final static BlockState coldLandWayBlock = Blocks.COBBLESTONE.defaultBlockState();
     final static BlockState wetWayBlock = Blocks.OAK_PLANKS.defaultBlockState();
     final static BlockState bridgeBlock = Blocks.OAK_PLANKS.defaultBlockState();
+    final static BlockState undergroundBlock = Blocks.SMOOTH_STONE.defaultBlockState();
 
     final BlockState landWayFoundationBlock = Blocks.DIRT.defaultBlockState();
 
     public static void buildWaySign(WorldGenLevel worldGenLevel, RegionWayMap.WayPoint p, BlockPos realPos) {
+        int landH = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, realPos.getX(), realPos.getZ());
+        boolean isUnderground = landH - realPos.getY() > 5;
+        if (isUnderground) {
+            GenerateStructure.generate(worldGenLevel, realPos, "way_signs/underland_waysign");
+            BlockEntity blockEntity = worldGenLevel.getBlockEntity(realPos.offset(0, 0, 1));
+            if (blockEntity instanceof SignNotesSetBlockEntity sign) {
+                for (int z = -1; z <= 1; z+=2) {
+                    sign.setScrollText(
+                            "§dWay\n" + p.pointNote(),
+                            new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 0, z), true)
+                    );
+                }
+                sign.setActivation(true);
+                sign.setChanged();
+            }
+            return;
+        }
+
         var biome = worldGenLevel.getBiome(realPos);
         boolean isWater = biome.is(Tags.Biomes.IS_WATER);
-
         if (!isWater) {
             GenerateStructure.generate(worldGenLevel, realPos, "way_signs/way_sign");
             BlockEntity blockEntity = worldGenLevel.getBlockEntity(realPos.offset(0, 4, 1));
@@ -69,6 +86,30 @@ public class WayTools {
     }
 
     public static void buildIntersection(WorldGenLevel worldGenLevel, RegionWayMap.WayPoint p, ChunkAccess chunkAccess, BlockPos realPos) {
+        int landH = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, realPos.getX(), realPos.getZ());
+        boolean isUnderground = landH > MAX_HEIGHT-64;
+        if (isUnderground) {
+            var genPos = new BlockPos(realPos.getX(), MAX_HEIGHT-64-1, realPos.getZ());
+            GenerateStructure.generate(worldGenLevel, genPos.offset(-5, -1, -5), "intersection/underland_cross");
+            fillFoundation(worldGenLevel, genPos.offset(-5, -1, -5), 12, 12);
+            BlockEntity blockEntity = worldGenLevel.getBlockEntity(genPos.offset(0, -1, 0));
+            if (blockEntity instanceof SignNotesSetBlockEntity sign) {
+                sign.setScrollText(
+                        p.pointNote(),
+                        new SignNotesSetBlockEntity.SignMetaData(new BlockPos(1, 2, 0), true),
+                        new SignNotesSetBlockEntity.SignMetaData(new BlockPos(1, 1, 0), true)
+                );
+                sign.setScrollText(
+                        "§dAD Time\n" + getNoteFromConfig(7),
+                        new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 2, 1), true),
+                        new SignNotesSetBlockEntity.SignMetaData(new BlockPos(0, 1, 1), true)
+                );
+                sign.setActivation(true);
+                sign.setChanged();
+            }
+            return;
+        }
+
         int x = realPos.getX();
         int z = realPos.getZ();
         var biome = worldGenLevel.getBiome(realPos);
@@ -137,6 +178,12 @@ public class WayTools {
         int x = realPos.getX();
         int y = realPos.getY();
         int z = realPos.getZ();
+        int landH = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+        boolean isUnderground = landH - y > 5;
+        if (isUnderground) {
+            GenerateStructure.generate(worldGenLevel, new BlockPos(x, y, z), "streetlight/underland_streetlight");
+            return;
+        }
         var biome = worldGenLevel.getBiome(realPos);
         boolean isWater = biome.is(Tags.Biomes.IS_WATER);
         if (isWater) {
@@ -160,132 +207,114 @@ public class WayTools {
         int dx = pointCode % 3;
         int dz = pointCode / 3;
 
-        if (dx != 1) {
-            // 修路
-            for (int i = -1; i < 2; i++) {
-                int x = realPos.getX();
-                int z = realPos.getZ() + i;
-                int h = realPos.getY();
-                pavement(worldGenLevel, x, h, z, biome);
-            }
+        dx -= 1;
+        dz -= 1;
+
+        // 修路
+        int x = realPos.getX();
+        int z = realPos.getZ();
+        int h = realPos.getY();
+
+        int landH = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
+        boolean isUnderground = landH - h > 5;
+        if (isUnderground) {
+            pavementBlock(worldGenLevel, x, h, z, dx, dz, 1, undergroundBlock);
+            return;
         }
-        if (dz != 1) {
-            for (int j = -1; j < 2; j++) {
-                int x = realPos.getX() + j;
-                int z = realPos.getZ();
-                int h = realPos.getY();
-                pavement(worldGenLevel, x, h, z, biome);
+
+        BlockPos setPos = new BlockPos(x, h, z);
+        var block = worldGenLevel.getBlockState(setPos.offset(0, -1, 0));
+        if (!block.is(Blocks.WATER)) {
+            boolean isDrt = biome.is(Tags.Biomes.IS_DRY); //.TAG.isDry(biome);
+            boolean isCold = biome.is(Tags.Biomes.IS_COLD); //BiomeTag.TAG.isCold(biome);
+            boolean isRiver = biome.is(new ResourceLocation("minecraft:river"));
+            if (h - worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) > 5) {
+                pavementBlock(worldGenLevel, x, h, z, dx, dz, 2, bridgeBlock);
+//                worldGenLevel.setBlock(new BlockPos(x + 2 * dz, h+1, z + 2 * (dx * (Math.abs(dz) - 1))), Blocks.DARK_OAK_FENCE.defaultBlockState(), 0);
+//                worldGenLevel.setBlock(new BlockPos(x + 2 * (dz * (Math.abs(dx) - 1)), h+1, z + 2 * dx), Blocks.DARK_OAK_FENCE.defaultBlockState(), 0);
             }
-        }
+//                worldGenLevel.setBlock(setPos, bridgeBlock, 0);
+            else if (isCold)
+                pavementBlock(worldGenLevel, x, h, z, dx, dz, 1, coldLandWayBlock);
+//                worldGenLevel.setBlock(setPos, coldLandWayBlock, 0);
+            else if (isDrt)
+                pavementBlock(worldGenLevel, x, h, z, dx, dz, 1, drtLandWayBlock);
+//                worldGenLevel.setBlock(setPos, drtLandWayBlock, 0);
+            else if (isRiver) {
+                pavementBlock(worldGenLevel, x, h, z, dx, dz, 2, wetWayBlock);
+//                worldGenLevel.setBlock(setPos, wetWayBlock, 0);
+            } else
+                pavementBlock(worldGenLevel, x, h, z, dx, dz, 1, landWayBlock);
+//                worldGenLevel.setBlock(setPos, landWayBlock, 0);
+        } else
+            pavementBlock(worldGenLevel, x, h, z, dx, dz, 1, wetWayBlock);
+//            worldGenLevel.setBlock(setPos, wetWayBlock, 0);
     }
 
     //路基填充 桥架 隧道 上空障碍清除
     public static void wayFoundation(WorldGenLevel worldGenLevel, BlockPos realPos, int pointCode) {
         var biome = worldGenLevel.getBiome(realPos);
         //水上不生成路基
-        boolean isWater = biome.is(Tags.Biomes.IS_WATER);
+        boolean isWater = biome.is(new ResourceLocation("minecraft:river"));
         if (isWater)
             return;
 
         int dx = pointCode % 3;
         int dz = pointCode / 3;
 
+        dx -= 1;
+        dz -= 1;
+
         int landH = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, realPos.getX(), realPos.getZ());
 
         if (realPos.getY() >= landH && realPos.getY() - landH <= 5) {
             // 高于地面
             for (int j = 0; j <= 3; j++) {
-                for (int i = -2 - j; i < 3 + j; i++) {
-                    int y = realPos.getY() - j;
-                    if (dx != 1) {
-                        int x = realPos.getX();
-                        int z = realPos.getZ() + i;
-                        int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
-                        if (rh > y)
-                            continue;
-                        worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.GRASS_BLOCK.defaultBlockState(), 0);
-                    }
-                    if (dz != 1) {
-                        int x = realPos.getX() + i;
-                        int z = realPos.getZ();
-                        int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
-                        if (rh > y)
-                            continue;
-                        worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.GRASS_BLOCK.defaultBlockState(), 0);
-                    }
+                int y = realPos.getY() - j;
+                int x = realPos.getX();
+                int z = realPos.getZ();
+                cheatAndPutBlock(worldGenLevel, x, y, z, Blocks.GRASS_BLOCK.defaultBlockState());
+                for (int i = 1; i < 3 + j; i++) {
+                    cheatAndPutBlock(worldGenLevel, x + i * dz, y, z + i * (dx * (Math.abs(dz) - 1)), Blocks.GRASS_BLOCK.defaultBlockState());
+                    cheatAndPutBlock(worldGenLevel, x + i * (dz * (Math.abs(dx) - 1)), y, z + i * dx, Blocks.GRASS_BLOCK.defaultBlockState());
                 }
             }
 
-            for (int i = -5; i < 6; i++) {
+            for (int i = 1; i < 6; i++) {
                 int ry = realPos.getY() - 4;
-                if (dx != 1) {
-                    int x = realPos.getX();
-                    int z = realPos.getZ() + i;
-                    int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
-                    if (rh >= ry)
-                        continue;
-                    for (int y = 0; y > rh - ry - 2; y--) {
-                        worldGenLevel.setBlock(new BlockPos(x, ry + y, z), Blocks.DIRT.defaultBlockState(), 0);
-                    }
-                }
-                if (dz != 1) {
-                    int x = realPos.getX() + i;
-                    int z = realPos.getZ();
-                    int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
-                    if (rh >= ry)
-                        continue;
-                    for (int y = 0; y > rh - ry - 2; y--) {
-                        worldGenLevel.setBlock(new BlockPos(x, ry + y, z), Blocks.DIRT.defaultBlockState(), 0);
-                    }
-                }
+                int x = realPos.getX();
+                int z = realPos.getZ();
+
+                putBlockToLand(worldGenLevel, x + i * dz, ry, z + i * (dx * (Math.abs(dz) - 1)), Blocks.DIRT.defaultBlockState());
+                putBlockToLand(worldGenLevel, x, ry, z, Blocks.DIRT.defaultBlockState());
+                putBlockToLand(worldGenLevel, x + i * (dz * (Math.abs(dx) - 1)), ry, z + i * dx, Blocks.DIRT.defaultBlockState());
             }
         } else if (realPos.getY() < landH && landH - realPos.getY() <= 5) {
             // 低于地面
-            for (int j = 0; j <= 5; j++) {
-                for (int i = -2 - j; i < 3 + j; i++) {
-                    if (dx != 1) {
-                        int x = realPos.getX();
-                        int z = realPos.getZ() + i;
-                        int y = realPos.getY() + j + 1;
-                        worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
-                    }
-                    if (dz != 1) {
-                        int x = realPos.getX() + i;
-                        int z = realPos.getZ();
-                        int y = realPos.getY() + j + 1;
-                        worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
-                    }
+            // 需要白名单
+            for (int j = 0; j <= 3; j++) {
+                int x = realPos.getX();
+                int z = realPos.getZ();
+                int y = realPos.getY() + j + 1;
+                worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
+                for (int i = 1; i < 3 + j; i++) {
+                    worldGenLevel.setBlock(new BlockPos(x + i * dz, y, z + i * (dx * (Math.abs(dz) - 1))), Blocks.AIR.defaultBlockState(), 0);
+                    worldGenLevel.setBlock(new BlockPos(x + i * (dz * (Math.abs(dx) - 1)), y, z + i * dx), Blocks.AIR.defaultBlockState(), 0);
                 }
                 // 装饰路边 泥土替换草方块
-                if (dx != 1) {
-                    int x = realPos.getX();
-                    int z = realPos.getZ() - 2 - j;
-                    int y = realPos.getY() + j;
-                    var bPos = new BlockPos(x, y, z);
-                    if (worldGenLevel.getBlockState(bPos).equals(Blocks.DIRT.defaultBlockState())) {
-                        worldGenLevel.setBlock(bPos, Blocks.GRASS_BLOCK.defaultBlockState(), 0);
-                    }
-                    z = realPos.getZ() + 2 + j;
-                    bPos = new BlockPos(x, y, z);
-                    if (worldGenLevel.getBlockState(bPos).equals(Blocks.DIRT.defaultBlockState())) {
-                        worldGenLevel.setBlock(bPos, Blocks.GRASS_BLOCK.defaultBlockState(), 0);
-                    }
+                int x2 = realPos.getX();
+                int z2 = realPos.getZ();
+                int y2 = realPos.getY() + j;
+                var bPos = new BlockPos(x2 + (j+2) * dz, y2, z2 + (j+2) * (dx * (Math.abs(dz) - 1)));
+                if (worldGenLevel.getBlockState(bPos).equals(Blocks.DIRT.defaultBlockState())
+                || worldGenLevel.getBlockState(bPos).equals(Blocks.STONE.defaultBlockState())) {
+                    worldGenLevel.setBlock(bPos, Blocks.GRASS_BLOCK.defaultBlockState(), 0);
                 }
-                if (dz != 1) {
-                    int x = realPos.getX() - 2 - j;
-                    int z = realPos.getZ();
-                    int y = realPos.getY() + j;
-                    var bPos = new BlockPos(x, y, z);
-                    if (worldGenLevel.getBlockState(bPos).equals(Blocks.DIRT.defaultBlockState())) {
-                        worldGenLevel.setBlock(bPos, Blocks.GRASS_BLOCK.defaultBlockState(), 0);
-                    }
-                    x = realPos.getX() + 2 + j;
-                    bPos = new BlockPos(x, y, z);
-                    if (worldGenLevel.getBlockState(bPos).equals(Blocks.DIRT.defaultBlockState())) {
-                        worldGenLevel.setBlock(bPos, Blocks.GRASS_BLOCK.defaultBlockState(), 0);
-                    }
+                bPos = new BlockPos(x2 + (j+2) * (dz * (Math.abs(dx) - 1)), y2, z2 + (j+2) * dx);
+                if (worldGenLevel.getBlockState(bPos).equals(Blocks.DIRT.defaultBlockState())
+                || worldGenLevel.getBlockState(bPos).equals(Blocks.STONE.defaultBlockState())) {
+                    worldGenLevel.setBlock(bPos, Blocks.GRASS_BLOCK.defaultBlockState(), 0);
                 }
-
             }
         } else if (realPos.getY() >= landH && realPos.getY() - landH > 5) {
             // 架桥墩
@@ -300,46 +329,60 @@ public class WayTools {
         } else {
             // 隧道
             for (int i = 0; i < 5; i++) {
-                for (int j = -2; j < 3; j++) {
-                    if (dx != 1) {
-                        int x = realPos.getX();
-                        int z = realPos.getZ() + j;
-                        int y = realPos.getY() + i + 1;
-                        worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
-                    }
-                    if (dz != 1) {
-                        int x = realPos.getX() + j;
-                        int z = realPos.getZ();
-                        int y = realPos.getY() + i + 1;
-                        worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
-                    }
+                int x = realPos.getX();
+                int z = realPos.getZ();
+                int y = realPos.getY() + i + 1;
+                worldGenLevel.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 0);
+                for (int j = 1; j < 3; j++) {
+                    worldGenLevel.setBlock(new BlockPos(x + j * dz, y, z + j * (dx * (Math.abs(dz) - 1))), Blocks.AIR.defaultBlockState(), 0);
+                    worldGenLevel.setBlock(new BlockPos(x + j * (dz * (Math.abs(dx) - 1)), y, z + j * dx), Blocks.AIR.defaultBlockState(), 0);
                 }
             }
         }
     }
 
+    public static void buildPier(WorldGenLevel worldGenLevel, BlockPos realPos) {
+        var biome = worldGenLevel.getBiome(realPos);
+        //水上不生成路基
+        boolean isWater = biome.is(new ResourceLocation("minecraft:river"));
+        if (isWater)
+            return;
+
+        int landH = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, realPos.getX(), realPos.getZ());
+
+        if (realPos.getY() >= landH && realPos.getY() - landH > 5) {
+            // 架桥墩
+            int x = realPos.getX();
+            int y = realPos.getY() - 1;
+            int z = realPos.getZ();
+            putBlockToLand(worldGenLevel, x, y, z, Blocks.STONE_BRICKS.defaultBlockState());
+        }
+    }
+
     // 修路面
-    private static void pavement(WorldGenLevel worldGenLevel, int x, int h, int z, Holder<Biome> biome) {
-        BlockPos setPos = new BlockPos(x, h, z);
-        var block = worldGenLevel.getBlockState(setPos.offset(0, -1, 0));
-        if (!block.is(Blocks.WATER)) {
-            boolean isDrt = biome.is(Tags.Biomes.IS_DRY); //.TAG.isDry(biome);
-            boolean isCold = biome.is(Tags.Biomes.IS_COLD); //BiomeTag.TAG.isCold(biome);
-            boolean isRiver = biome.is(new ResourceLocation("minecraft:river")); //BiomeTag.TAG.isRiver(biome);
-            if (h - worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) > 5)
-                worldGenLevel.setBlock(setPos, bridgeBlock, 0);
-            else if (isCold)
-                worldGenLevel.setBlock(setPos, coldLandWayBlock, 0);
-            else if (isDrt)
-                worldGenLevel.setBlock(setPos, drtLandWayBlock, 0);
-            else if (isRiver) {
-                worldGenLevel.setBlock(setPos, wetWayBlock, 0);
-            } else
-                worldGenLevel.setBlock(setPos, landWayBlock, 0);
-//            for (int k = 1; k <= 3; k++)
-//                worldGenLevel.setBlock(setPos.offset(0, k, 0), Blocks.AIR.defaultBlockState(), 0);
-        } else
-            worldGenLevel.setBlock(setPos, wetWayBlock, 0);
+    private static void pavementBlock(WorldGenLevel worldGenLevel, int x, int h, int z, int ddx, int ddz, int width, BlockState blockState) {
+        worldGenLevel.setBlock(new BlockPos(x, h, z), blockState, 0);
+        for (int i = 1; i <= width; i++) {
+            worldGenLevel.setBlock(new BlockPos(x + i * ddz, h, z + i * (ddx * (Math.abs(ddz) - 1))), blockState, 0);
+            worldGenLevel.setBlock(new BlockPos(x + i * (ddz * (Math.abs(ddx) - 1)), h, z + i * ddx), blockState, 0);
+        }
+    }
+
+    private static void cheatAndPutBlock(WorldGenLevel worldGenLevel, int x, int y, int z, BlockState blockState) {
+        int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
+        if (rh > y)
+            return;
+        worldGenLevel.setBlock(new BlockPos(x, y, z), blockState, 0);
+    }
+
+    // 从ry高度开始，向陆地上放置方块
+    private static void putBlockToLand(WorldGenLevel worldGenLevel, int x, int ry, int z, BlockState blockState) {
+        int rh = worldGenLevel.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, x, z);
+        if (rh >= ry)
+            return;
+        for (int y = 0; y > rh - ry - 2; y--) {
+            worldGenLevel.setBlock(new BlockPos(x, ry + y, z), Blocks.DIRT.defaultBlockState(), 0);
+        }
     }
 
     private static void fillFoundation(WorldGenLevel worldGenLevel, BlockPos realPos, int widthX, int widthZ) {
