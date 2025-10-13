@@ -8,7 +8,6 @@ import net.minecraft.core.Vec3i;
 
 import java.util.*;
 
-import static com.hxzhitang.tongdaway.Common.CHUNK_GROUP_BUFFER;
 import static com.hxzhitang.tongdaway.Common.CHUNK_GROUP_SIZE;
 
 
@@ -99,7 +98,7 @@ public class WayMap {
             int[] z0s = {selfNodes[0].getZ(), otherNodes.get(0)[0].getZ()};
             Arrays.sort(z0s);
             int z0 = random.nextInt(z0s[0], z0s[1] + 1);
-            var edgeNode0 = new BlockPos(this.x * CHUNK_GROUP_SIZE * 16 + 1, 0, z0);
+            var edgeNode0 = new BlockPos(this.x * CHUNK_GROUP_SIZE * 16, 0, z0);
             ways.put(Pair.of(selfNodes[0], edgeNode0), "West");
             intersection.put(selfNodes[0], intersection.get(selfNodes[0])+"\nWest");
 
@@ -107,16 +106,15 @@ public class WayMap {
             int[] z1s = {selfNodes[0].getZ(), otherNodes.get(1)[0].getZ()};
             Arrays.sort(z1s);
             int z1 = random.nextInt(z1s[0], z1s[1] + 1);
-            var edgeNode1 = new BlockPos((this.x + 1) * CHUNK_GROUP_SIZE * 16 - 2, 0, z1);
+            var edgeNode1 = new BlockPos((this.x + 1) * CHUNK_GROUP_SIZE * 16 - 1, 0, z1);
             ways.put(Pair.of(selfNodes[0], edgeNode1), "East");
             intersection.put(selfNodes[0], intersection.get(selfNodes[0])+"\nEast");
 
-            //连接自身两个节点，大的连上小的连下
             random.setSeed(TDWRandom.getSeedByXZ(seed, 0, z));
             int[] x0s = {selfNodes[0].getX(), otherNodes.get(2)[0].getX()};
             Arrays.sort(x0s);
             int x0 = random.nextInt(x0s[0], x0s[1] + 1);
-            var edgeNode2 = new BlockPos(x0, 0, this.z * CHUNK_GROUP_SIZE * 16 + 1);
+            var edgeNode2 = new BlockPos(x0, 0, this.z * CHUNK_GROUP_SIZE * 16);
             ways.put(Pair.of(selfNodes[0], edgeNode2), "South");
             intersection.put(selfNodes[0], intersection.get(selfNodes[0])+"\nSouth");
 
@@ -124,7 +122,7 @@ public class WayMap {
             int[] x1s = {selfNodes[0].getX(), otherNodes.get(3)[0].getX()};
             Arrays.sort(x1s);
             int x1 = random.nextInt(x1s[0], x1s[1] + 1);
-            var edgeNode3 = new BlockPos(x1, 0, (this.z + 1) * CHUNK_GROUP_SIZE * 16 - 2);
+            var edgeNode3 = new BlockPos(x1, 0, (this.z + 1) * CHUNK_GROUP_SIZE * 16 - 1);
             ways.put(Pair.of(selfNodes[0], edgeNode3), "North");
             intersection.put(selfNodes[0], intersection.get(selfNodes[0])+"\nNorth");
         } else {
@@ -135,7 +133,7 @@ public class WayMap {
             int[] z0s = {selfNodes[0].getZ(), otherNodes.get(0)[0].getZ()};
             Arrays.sort(z0s);
             int z0 = random.nextInt(z0s[0], z0s[1] + 1);
-            var edgeNode0 = new BlockPos(this.x * CHUNK_GROUP_SIZE * 16 + 1, 0, z0);
+            var edgeNode0 = new BlockPos(this.x * CHUNK_GROUP_SIZE * 16, 0, z0);
             ways.put(Pair.of(selfNodes[0], edgeNode0), "West");
             intersection.put(selfNodes[0], intersection.get(selfNodes[0])+"\nWest");
 
@@ -143,7 +141,7 @@ public class WayMap {
             int[] z1s = {selfNodes[1].getZ(), otherNodes.get(1)[0].getZ()};
             Arrays.sort(z1s);
             int z1 = random.nextInt(z1s[0], z1s[1] + 1);
-            var edgeNode1 = new BlockPos((this.x + 1) * CHUNK_GROUP_SIZE * 16 - 2, 0, z1);
+            var edgeNode1 = new BlockPos((this.x + 1) * CHUNK_GROUP_SIZE * 16 - 1, 0, z1);
             ways.put(Pair.of(selfNodes[1], edgeNode1), "East");
             intersection.put(selfNodes[1], intersection.get(selfNodes[1])+"\nEast");
 
@@ -154,7 +152,7 @@ public class WayMap {
             int[] x0s = {selfNodes[0].getX(), otherNodes.get(2)[0].getX()};
             Arrays.sort(x0s);
             int x0 = random.nextInt(x0s[0], x0s[1] + 1);
-            var edgeNode2 = new BlockPos(x0, 0, this.z * CHUNK_GROUP_SIZE * 16 + 1);
+            var edgeNode2 = new BlockPos(x0, 0, this.z * CHUNK_GROUP_SIZE * 16);
             ways.put(Pair.of(selfNodes[0], edgeNode2), "South");
             intersection.put(selfNodes[0], intersection.get(selfNodes[0])+"\nSouth");
 
@@ -162,7 +160,7 @@ public class WayMap {
             int[] x1s = {selfNodes[1].getX(), otherNodes.get(3)[0].getX()};
             Arrays.sort(x1s);
             int x1 = random.nextInt(x1s[0], x1s[1] + 1);
-            var edgeNode3 = new BlockPos(x1, 0, (this.z + 1) * CHUNK_GROUP_SIZE * 16 - 2);
+            var edgeNode3 = new BlockPos(x1, 0, (this.z + 1) * CHUNK_GROUP_SIZE * 16 - 1);
             ways.put(Pair.of(selfNodes[1], edgeNode3), "North");
             intersection.put(selfNodes[1], intersection.get(selfNodes[1])+"\nNorth");
 
@@ -185,7 +183,7 @@ public class WayMap {
         int pz = cz % CHUNK_GROUP_SIZE;
         px = px >= 0 ? px : CHUNK_GROUP_SIZE + px;
         pz = pz >= 0 ? pz : CHUNK_GROUP_SIZE + pz;
-        return wayImg[px*16+bx+CHUNK_GROUP_BUFFER*16][pz*16+bz+CHUNK_GROUP_BUFFER*16];
+        return wayImg[px*16+bx][pz*16+bz];
     }
 
     public void setStructureNode(BlockPos structureBlockPos, String structureName) {

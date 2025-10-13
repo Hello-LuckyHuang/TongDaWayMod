@@ -26,7 +26,6 @@ public class SignNotesSetBlockEntity extends BlockEntity {
         return Objects.requireNonNull(this.getLevel()).hasNearbyAlivePlayer(this.getBlockPos().getX() + 0.5D, this.getBlockPos().getY() + 0.5D, this.getBlockPos().getZ() + 0.5D, 50);
     }
 
-    //静态方法，每次回调都会更新状态
     public static void tick(Level level, BlockPos blockPos, BlockState state, SignNotesSetBlockEntity entity) {
         if (!entity.isActivation)
             return;
@@ -39,7 +38,7 @@ public class SignNotesSetBlockEntity extends BlockEntity {
                     SignMetaData signMetaData = entity.scrollText.get(scrollTexts);
                     BlockEntity blockEntity = level.getBlockEntity(blockPos.offset(signMetaData.signOffsetPos));
                     if (blockEntity instanceof SignBlockEntity sign) {
-                        //根据告示牌和悬挂告示牌区分显示字符数
+                        //���ݸ�ʾ�ƺ����Ҹ�ʾ��������ʾ�ַ���
                         int lineCharacterNum = sign instanceof HangingSignBlockEntity ? 10 : 14;
                         for (int i = 0; i < 4; i++) {
                             ScrollText scrollText = scrollTexts[i];
@@ -64,7 +63,6 @@ public class SignNotesSetBlockEntity extends BlockEntity {
 //        this.setActivation(true);
 //    }
 
-    // 存储实体的数据
     @Override
     protected void saveAdditional(CompoundTag nbt, HolderLookup.Provider p_331864_) {
         nbt.putInt("isActivation", isActivation? 1 : 0);
@@ -89,7 +87,7 @@ public class SignNotesSetBlockEntity extends BlockEntity {
         super.saveAdditional(nbt, p_331864_);
     }
 
-    // 读取实体的数据
+
     @Override
     public void loadAdditional(CompoundTag nbt, HolderLookup.Provider p_335164_) {
         super.loadAdditional(nbt, p_335164_);
@@ -119,7 +117,6 @@ public class SignNotesSetBlockEntity extends BlockEntity {
         }
     }
 
-    //在被移除时在控制的木牌上生成“错误”信息
     public void onRemove(BlockPos blockPos) {
         List<String[]> removeNotes = List.of(
                 new String[]{"xx**...&**x", "*x**..x*.*x", "xxxx....**...**", "x*x*..&&...*"},
@@ -155,7 +152,7 @@ public class SignNotesSetBlockEntity extends BlockEntity {
             if (md1.signOffsetPos.getY() == md2.signOffsetPos.getY())
                 return md1.signOffsetPos.getX() - md2.signOffsetPos.getX();
             else if (md1.signOffsetPos.getX() == md2.signOffsetPos.getX()) {
-                return (md1.inFront?1:0)-(md2.inFront?1:0); // 按照 inFront 字段排序，true 在前 (1)，false 在后 (0)
+                return (md1.inFront?1:0)-(md2.inFront?1:0); // ���� inFront �ֶ�����true ��ǰ (1)��false �ں� (0)
             }
             return md1.signOffsetPos.getY() - md2.signOffsetPos.getY();
         });

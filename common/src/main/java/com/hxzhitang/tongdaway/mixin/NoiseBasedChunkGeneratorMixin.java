@@ -17,12 +17,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 import static com.hxzhitang.tongdaway.Common.CHUNK_GROUP_SIZE;
+
 
 @Mixin(NoiseBasedChunkGenerator.class)
 public abstract class NoiseBasedChunkGeneratorMixin extends ChunkGeneratorMixin {
@@ -33,11 +33,11 @@ public abstract class NoiseBasedChunkGeneratorMixin extends ChunkGeneratorMixin 
     @Shadow @Final private Supplier<Aquifer.FluidPicker> globalFluidPicker;
 
     @Unique
-    public final Map<RegionPos, Future<?>> tongDaWay$chunkGroupsFuture = new HashMap<>();
+    public final Map<RegionPos, Future<?>> tongDaWay$chunkGroupsFuture = new ConcurrentHashMap<>();
     @Unique
-    public final Map<RegionPos, ChunkGroup> tongDaWay$chunkGroups = new HashMap<>();
+    public final Map<RegionPos, ChunkGroup> tongDaWay$chunkGroups = new ConcurrentHashMap<>();
     @Unique
-    private final LinkedBlockingQueue<Runnable> tongDaWay$chunkGroupLoadQueue = new LinkedBlockingQueue<Runnable>();
+    private final LinkedBlockingQueue<Runnable> tongDaWay$chunkGroupLoadQueue = new LinkedBlockingQueue<Runnable>(); //线程池
     @Unique
     private final ThreadPoolExecutor tongDaWay$chunkGroupLoadPoolExecutor = new ThreadPoolExecutor(64, 1024, 1, TimeUnit.DAYS, tongDaWay$chunkGroupLoadQueue);
 
@@ -48,6 +48,7 @@ public abstract class NoiseBasedChunkGeneratorMixin extends ChunkGeneratorMixin 
         if (dimensionType.effectsLocation().toString().equals("minecraft:overworld")) {
             int x = chunk.getPos().x;
             int z = chunk.getPos().z;
+            //搜索区域类结构，生成区域路线图
             int px = (int) Math.floor(x / (double) CHUNK_GROUP_SIZE);
             int pz = (int) Math.floor(z / (double) CHUNK_GROUP_SIZE);
             RegionPos regionPos = new RegionPos(px, pz);
@@ -75,12 +76,15 @@ public abstract class NoiseBasedChunkGeneratorMixin extends ChunkGeneratorMixin 
                         tongDaWay$chunkGroups.get(regionPos).setLoadHeightMapQuickly();
                     }
                 }
+                //等待同区域的搜索和生成
                 try {
-                    tongDaWay$chunkGroupsFuture.get(regionPos).get();
+                    if (tongDaWay$chunkGroupsFuture.containsKey(regionPos))
+                        tongDaWay$chunkGroupsFuture.get(regionPos).get();
                 } catch (InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
             }
+            //检查周围的区块是否已经路线图生成，若否则创建较慢线程加载
             for (int px1 = px - 1; px1 <= px + 1; px1++) {
                 for (int pz1 = pz - 1; pz1 <= pz + 1; pz1++) {
                     RegionPos regionPos1 = new RegionPos(px1, pz1);

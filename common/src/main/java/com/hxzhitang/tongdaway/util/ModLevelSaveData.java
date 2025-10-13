@@ -13,8 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ModLevelSaveData类用于管理和持久化游戏中的路线计算数据。
@@ -23,7 +22,7 @@ import java.util.Map;
  */
 public class ModLevelSaveData extends SavedData {
     public static final String NAME = "tongdaway_mod_way_data";
-    protected final Map<RegionPos, RegionWayMap> chunkWays = new HashMap<>();
+    protected final ConcurrentHashMap<RegionPos, RegionWayMap> chunkWays = new ConcurrentHashMap<>();
 
     public static ModLevelSaveData create() {
         return new ModLevelSaveData();
