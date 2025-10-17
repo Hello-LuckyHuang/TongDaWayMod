@@ -233,10 +233,16 @@ public class ChunkGroup implements Runnable {
     // 测试样例
     // -17109142 324 256 924
     /**
-     * 预获取高度图，此部分计算地表高度代码参考自Taiterio的world preview
-     * 见https://github.com/caeruleusDraconis/world-preview
+     * 预获取高度图
+     * 此部分计算地表高度代码使用自：Taiterio的world preview
+     * 原始许可证：Apache 2.0协议
+     * 原始代码链接：https://github.com/caeruleusDraconis/world-preview
+     * 源方法：caeruleusTait.world.preview.backend.worker.HeightmapWorkUnit.doWork
+     * 本方法修改后适应本mod的区块高度图计算
      * @param chunkPos 区块坐标
      * @param blockStride 采样步长，要16的约数
+     * @param seaLevel 海平面高度
+     * @param maxHeight 最大高度
      * @return 高度图
      */
     private HeightData[][] getHeight(ChunkPos chunkPos, int blockStride, int seaLevel, int maxHeight) {
