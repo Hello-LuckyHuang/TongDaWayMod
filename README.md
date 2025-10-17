@@ -5,4 +5,6 @@ Mod功能尚未完善。仅供体验使用。不建议在将公开发布的整�
 
 目前仅支持版本： 1.20.1 Forge、1.20.6 NeoForge、Fabric
 
-部分代码使用自 [World Preview](https://github.com/caeruleusDraconis/world-preview)
+## 致谢
+
+计算高度图部分代码使用自 [World Preview](https://github.com/caeruleusDraconis/world-preview) 使用 Apache 2.0 协议
