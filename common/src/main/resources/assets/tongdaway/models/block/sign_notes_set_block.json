@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "tongdaway:block/sign_notes_set_block"
+  }
+}
