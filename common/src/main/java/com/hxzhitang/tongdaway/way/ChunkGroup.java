@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static com.hxzhitang.tongdaway.Common.CHUNK_GROUP_SIZE;
 
+
 public class ChunkGroup implements Runnable {
     private final int x;
     private final int z;
@@ -39,8 +40,6 @@ public class ChunkGroup implements Runnable {
     private final RandomState random;
     private final NoiseGeneratorSettings noiseGeneratorSettings;
     private final Map<RegionPos, RegionWayMap> chunkWays;
-
-    public static final int MAX_HEIGHT = 146+64;
 
     private final LinkedBlockingQueue<Runnable> linkedBlockingQueue = new LinkedBlockingQueue<Runnable>(); //线程池
     private final ThreadPoolExecutor heightMapLoadPoolExecutor;
@@ -106,6 +105,7 @@ public class ChunkGroup implements Runnable {
         //寻找村庄，生成高度图
         var dimensionType = worldGenRegion.dimensionType();
         int seaLevel = worldGenRegion.getSeaLevel();
+        int maxHeight = worldGenRegion.getMaxBuildHeight() - 176 + 2;
 
         LevelHeightAccessor levelHeightAccessor = LevelHeightAccessor.create(dimensionType.minY(), dimensionType.height());
 
@@ -133,13 +133,13 @@ public class ChunkGroup implements Runnable {
 
                     heightMapLoadPoolExecutor.submit(() -> {
                         //计算高度图
-                        var heightMapTile = getHeight(protoChunk.getPos(), blockStride, seaLevel, MAX_HEIGHT);
+                        var heightMapTile = getHeight(protoChunk.getPos(), blockStride, seaLevel, maxHeight);
                         for (int px = 0; px < 16/blockStride; px++) {
                             for (int pz = 0; pz < 16 / blockStride; pz++) {
                                 int x = finalGx * 16 / blockStride + px;
                                 int z = finalGz * 16 / blockStride + pz;
                                 int y = heightMapTile[px][pz].y;
-                                heightMap[x][z] = y;
+                                heightMap[x][z] = Math.min(y, maxHeight);
                             }
                         }
                         //慢线程休息时间！
@@ -200,7 +200,7 @@ public class ChunkGroup implements Runnable {
             int[] end = {pBx, pBz};
             List<int[]> path = OptimizedAStarEightDirections.findMinimumCostPath(slopeImg, start, end, (x, y) -> {
                 final int h = heightMap[x/blockStride][y/blockStride];
-                return h <= seaLevel || h > MAX_HEIGHT - 64 ? 5000.0 : 0.0;
+                return h <= seaLevel || h >= maxHeight-2 ? 5000.0 : 0.0;
             });
             // 标记已生成路径，尽量避免路径重合
 //            for (int[] pp : path) {
@@ -253,7 +253,7 @@ public class ChunkGroup implements Runnable {
         final int cellWidth = noiseSettings.getCellWidth();
         final int cellHeight = noiseSettings.getCellHeight();
         final int minY = noiseSettings.minY();
-        final int maxY = minY + maxHeight;//minY + noiseSettings.height();
+        final int maxY = maxHeight + 20;//minY + noiseSettings.height();
         final int cellMinY = Mth.floorDiv(minY, cellHeight);
         final int cellCountY = Mth.floorDiv(maxY - minY, cellHeight);
         final int cellOffsetY = cellMinY - Mth.floorDiv(noiseSettings.minY(), cellHeight);
