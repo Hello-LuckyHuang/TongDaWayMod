@@ -17,6 +17,3 @@ public class Common {
         return new ResourceLocation(MODID, name);
     }
 }
-
-
-//-1458598834776465694
