@@ -18,7 +18,7 @@ import net.minecraftforge.fml.common.Mod;
 
 //@Mod.EventBusSubscriber(modid = Tongdaway.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ModEventTest {
-    @SubscribeEvent
+//    @SubscribeEvent
     public static void onCommandRegister(RegisterCommandsEvent event) {
         event.getDispatcher().register(
                 Commands.literal("testmodtest")

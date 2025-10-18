@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Random;
 
 import static com.hxzhitang.tongdaway.Tongdaway.CHUNK_GROUP_SIZE;
-import static com.hxzhitang.tongdaway.way.ChunkGroup.MAX_HEIGHT;
 
 public class WayTools {
     final static BlockState landWayBlock = Blocks.DIRT_PATH.defaultBlockState();
@@ -87,9 +86,10 @@ public class WayTools {
 
     public static void buildIntersection(WorldGenLevel worldGenLevel, RegionWayMap.WayPoint p, ChunkAccess chunkAccess, BlockPos realPos) {
         int landH = worldGenLevel.getHeight(Heightmap.Types.WORLD_SURFACE_WG, realPos.getX(), realPos.getZ());
-        boolean isUnderground = landH > MAX_HEIGHT-64;
+        int maxHeight = worldGenLevel.getMaxBuildHeight() - 176 + 2;
+        boolean isUnderground = landH > maxHeight;
         if (isUnderground) {
-            var genPos = new BlockPos(realPos.getX(), MAX_HEIGHT-64-1, realPos.getZ());
+            var genPos = new BlockPos(realPos.getX(), maxHeight-1, realPos.getZ());
             GenerateStructure.generate(worldGenLevel, genPos.offset(-5, -1, -5), "intersection/underland_cross");
             fillFoundation(worldGenLevel, genPos.offset(-5, -1, -5), 12, 12);
             BlockEntity blockEntity = worldGenLevel.getBlockEntity(genPos.offset(0, -1, 0));
