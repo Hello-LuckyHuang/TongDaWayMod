@@ -26,7 +26,7 @@ import java.util.zip.GZIPInputStream;
 public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonElement> {
     private static final String folder = "way_structure";
 
-    // 普通路口
+    // 路口
     public static final Map<Integer, CrossTemplate> normalCross = new HashMap<>();
     // 地下路口
     public static final Map<Integer, CrossTemplate> undergroundCross = new HashMap<>();

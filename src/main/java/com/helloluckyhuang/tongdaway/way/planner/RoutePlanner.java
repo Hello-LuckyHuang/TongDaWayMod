@@ -13,12 +13,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.Tags;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -347,20 +349,27 @@ public class RoutePlanner {
         ResultWay result = new ResultWay(new CurveRoute());
 
         // 车站起点连接
-        result.addLine(con.start(), first);
+        result.addLine(con.start(), first, "", "");
 
         Vec3 startDir = first.subtract(con.start()).normalize();
         int i = 0;
         while (i < path0.size() - 1) {
             Vec3 endDir = (path0.get(i).subtract(path0.get(i+1))).normalize();
-            result.addBezier(path0.get(i), startDir, path0.get(i+1).subtract(path0.get(i)), endDir);
+            result.addBezier(
+                    path0.get(i),
+                    startDir,
+                    path0.get(i+1).subtract(path0.get(i)),
+                    endDir,
+                    "",
+                    ""
+            );
             i++;
 
             startDir = endDir.reverse();
         }
 
         // 终点车站连接
-        result.addLine(last, con.end());
+        result.addLine(last, con.end(), "", "");
 
         return result;
     }
@@ -444,19 +453,15 @@ public class RoutePlanner {
     public record ResultWay(
             CurveRoute way
     ) {
-        public void addLine(Vec3 start, Vec3 end) {
-            way.addSegment(new CurveRoute.LineSegment(start, end));
+        public void addLine(Vec3 start, Vec3 end, String biome, String type) {
+            way.addSegment(new CurveRoute.LineSegment(start, end, biome, type));
         }
 
-        public void addLine(Vec3 start, Vec3 end, String type) {
-            way.addSegment(new CurveRoute.LineSegment(start, end));
-        }
-
-        public void addBezier(Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir) {
+        public void addBezier(Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String biome, String type) {
             if (Math.abs(startDir.dot(endDir)) > 0.9999 && startDir.dot(endOffset.normalize()) > 0.9999) {
-                way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset)));
+                way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biome, type));
             } else {
-                way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir));
+                way.addSegment(new CurveRoute.BezierSegment(start, startDir, endOffset, endDir, biome, type));
             }
         }
     }
