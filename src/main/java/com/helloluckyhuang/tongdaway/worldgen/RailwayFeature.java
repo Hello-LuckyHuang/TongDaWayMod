@@ -3,7 +3,7 @@ package com.helloluckyhuang.tongdaway.worldgen;
 import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
 import com.helloluckyhuang.tongdaway.structure.ModStructureManager;
 import com.helloluckyhuang.tongdaway.way.RailwayBuilder;
-import com.helloluckyhuang.tongdaway.way.RailwayMap;
+import com.helloluckyhuang.tongdaway.way.WayMap;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
 import com.helloluckyhuang.tongdaway.structure.RoadTemplate;
@@ -39,18 +39,18 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         RailwayBuilder builder = RailwayBuilder.getInstance(ctx.level().getSeed());
         if (builder == null) return false;
 
-        RailwayMap railwayMap = builder.regionRailways.get(regionPos);
-        if (railwayMap == null) return false;
+        WayMap wayMap = builder.regionRailways.get(regionPos);
+        if (wayMap == null) return false;
 
         // 根据路线生成路基
         if (builder.regionRailways.containsKey(regionPos)) {
-            if (railwayMap.routeMap.containsKey(cPos)) {
-                placeRoad(railwayMap, cPos, chunk, world);
+            if (wayMap.routeMap.containsKey(cPos)) {
+                placeRoad(wayMap, cPos, chunk, world);
             }
         }
 
         // 放置路口
-        for (CrossPlanner.CrossGenInfo stationPlace : railwayMap.stations) {
+        for (CrossPlanner.CrossGenInfo stationPlace : wayMap.cross) {
             var station = stationPlace.stationStructure();
             if (station == null) continue;
             var pos = stationPlace.placePos();
@@ -88,8 +88,8 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         }
     }
 
-    private static void placeRoad(RailwayMap railwayMap, ChunkPos cPos, ChunkAccess chunk, WorldGenLevel world) {
-        var routes = railwayMap.routeMap.get(cPos);
+    private static void placeRoad(WayMap wayMap, ChunkPos cPos, ChunkAccess chunk, WorldGenLevel world) {
+        var routes = wayMap.routeMap.get(cPos);
         for (CurveRoute route : routes) {
             int seed = route.getSegments().size();
             RoadTemplate ground = ModStructureManager.getRandomGround(seed);

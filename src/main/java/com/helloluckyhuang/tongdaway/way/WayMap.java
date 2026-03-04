@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
 
 import static com.helloluckyhuang.tongdaway.TongDaWay.CHUNK_GROUP_SIZE;
 
-public class RailwayMap {
+public class WayMap {
     public static final int samplingNum = 2; // 每个区块的采样数
 
     public final RegionPos regionPos;
@@ -35,10 +35,10 @@ public class RailwayMap {
     // 路线
     public final Map<ChunkPos, Set<CurveRoute>> routeMap = new ConcurrentHashMap<>();
     // 车站
-    public final List<CrossPlanner.CrossGenInfo> stations = new ArrayList<>();
+    public final List<CrossPlanner.CrossGenInfo> cross = new ArrayList<>();
     //********每个区域的数据*********
 
-    public RailwayMap(RegionPos regionPos) {
+    public WayMap(RegionPos regionPos) {
         this.regionPos = regionPos;
     }
 
@@ -97,7 +97,7 @@ public class RailwayMap {
 
         // 生成路口位置和连接规划
         CrossPlanner stationPlanner = new CrossPlanner(regionPos);
-        stations.addAll(CrossPlanner.generateCross(regionPos, level.getLevel(), level.getSeed()));
+        cross.addAll(CrossPlanner.generateCross(regionPos, level.getLevel(), level.getSeed()));
         var connections = stationPlanner.generateConnections(level.getLevel(), level.getSeed());
         // 生成路线图
 //        List<List<int[]>> test = new ArrayList<>();
@@ -114,7 +114,7 @@ public class RailwayMap {
                     });
 //            test.add(way);
             // 设置出口坐标
-            var route = routePlanner.getWay(way, costMap, connection, level.getLevel());
+            var route = routePlanner.getWay(way, costMap, connection, level);
             putChunk(route);
         }
     }
@@ -172,7 +172,7 @@ public class RailwayMap {
 
         // 保存车站
         ListTag stationTag = new ListTag();
-        stations.forEach(station -> stationTag.add(station.toNBT()));
+        cross.forEach(station -> stationTag.add(station.toNBT()));
         nbt.put("Stations", stationTag);
 
         // 保存路线
@@ -206,16 +206,16 @@ public class RailwayMap {
         return nbt;
     }
 
-    public static RailwayMap fromNBT(CompoundTag nbt) {
+    public static WayMap fromNBT(CompoundTag nbt) {
         RegionPos regionPos = RegionPos.fromNBT((ListTag) nbt.get("RegionPos"));
-        RailwayMap railwayMap = new RailwayMap(regionPos);
+        WayMap wayMap = new WayMap(regionPos);
 
         // 读取车站
         ListTag stationTag = (ListTag) nbt.get("Stations");
         if (stationTag != null) {
             for (net.minecraft.nbt.Tag tag : stationTag) {
                 CrossPlanner.CrossGenInfo station = CrossPlanner.CrossGenInfo.fromNBT((CompoundTag) tag);
-                railwayMap.stations.add(station);
+                wayMap.cross.add(station);
             }
         }
 
@@ -237,11 +237,11 @@ public class RailwayMap {
                         CurveRoute route = palette.get(index);
                         routes.add(route);
                     }
-                    railwayMap.routeMap.put(chunkPos, routes);
+                    wayMap.routeMap.put(chunkPos, routes);
                 }
             }
         }
 
-        return railwayMap;
+        return wayMap;
     }
 }

@@ -5,7 +5,7 @@ import com.helloluckyhuang.tongdaway.way.RegionPos;
 import java.util.*;
 
 import static com.helloluckyhuang.tongdaway.TongDaWay.CHUNK_GROUP_SIZE;
-import static com.helloluckyhuang.tongdaway.way.RailwayMap.samplingNum;
+import static com.helloluckyhuang.tongdaway.way.WayMap.samplingNum;
 
 // 参考：URL_ADDRESS// 参考：https://www.redblobgames.com/pathfinding/a-star/introduction.html
 public class AStarPathfinder {

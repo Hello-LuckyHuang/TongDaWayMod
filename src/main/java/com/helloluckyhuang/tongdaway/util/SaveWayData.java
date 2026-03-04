@@ -1,7 +1,7 @@
 package com.helloluckyhuang.tongdaway.util;
 
 import com.helloluckyhuang.tongdaway.TongDaWay;
-import com.helloluckyhuang.tongdaway.way.RailwayMap;
+import com.helloluckyhuang.tongdaway.way.WayMap;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import net.minecraft.nbt.*;
 import net.minecraft.server.MinecraftServer;
@@ -17,7 +17,7 @@ public class SaveWayData {
     public static final LevelResource WAY_DATA_DIR = new LevelResource("tongdaway_data");
     public static final String NAME = "tongdaway_mod_way_data";
 
-    public static void putRailwayMap(RegionPos regionPos, RailwayMap railwayMap, MinecraftServer server) {
+    public static void putWayMap(RegionPos regionPos, WayMap wayMap, MinecraftServer server) {
         try {
             Path path = server.getWorldPath(WAY_DATA_DIR);
             if (!Files.exists(path)) {
@@ -32,7 +32,7 @@ public class SaveWayData {
                 OutputStream resourceStream = new FileOutputStream(file);
                 try (DataOutputStream stream = new DataOutputStream(new BufferedOutputStream(
                         new GZIPOutputStream(resourceStream)))) {
-                    NbtIo.write(railwayMap.toNBT(), stream);
+                    NbtIo.write(wayMap.toNBT(), stream);
                 } catch (Exception ex) {
                     TongDaWay.LOGGER.error("Error saving data for region {}", regionPos, ex);
                 }
@@ -42,7 +42,7 @@ public class SaveWayData {
         }
     }
 
-    public static RailwayMap getRailwayMap(RegionPos regionPos, MinecraftServer server) {
+    public static WayMap getWayMap(RegionPos regionPos, MinecraftServer server) {
         try {
             Path path = server.getWorldPath(WAY_DATA_DIR);
             File file = new File(path + "/" + NAME + "_" + regionPos + ".nbt");
@@ -52,7 +52,7 @@ public class SaveWayData {
             try (DataInputStream stream = new DataInputStream(new BufferedInputStream(
                     new GZIPInputStream(resourceStream)))) {
                 CompoundTag rootTag = NbtIo.read(stream, NbtAccounter.create(0x20000000L));
-                return RailwayMap.fromNBT(rootTag);
+                return WayMap.fromNBT(rootTag);
             } catch (Exception ex) {
                 TongDaWay.LOGGER.error("Error loading data for region {}", regionPos, ex);
             }

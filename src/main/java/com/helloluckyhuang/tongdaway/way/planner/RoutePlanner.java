@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 import static com.helloluckyhuang.tongdaway.TongDaWay.CHUNK_GROUP_SIZE;
 import static com.helloluckyhuang.tongdaway.TongDaWay.HEIGHT_MAX_INCREMENT;
-import static com.helloluckyhuang.tongdaway.way.RailwayMap.samplingNum;
+import static com.helloluckyhuang.tongdaway.way.WayMap.samplingNum;
 
 
 // 寻路 生成路径曲线
@@ -205,11 +205,11 @@ public class RoutePlanner {
      * 规划路径
      * @param way 路线图
      */
-    public ResultWay getWay(List<int[]> way, int[][] costMap, CrossPlanner.ConnectionGenInfo connectionGenInfo, ServerLevel level) {
-        List<int[]> handledHeightWay = handleHeight(way, level, costMap, connectionGenInfo);
+    public ResultWay getWay(List<int[]> way, int[][] costMap, CrossPlanner.ConnectionGenInfo connectionGenInfo, WorldGenRegion world) {
+        List<int[]> handledHeightWay = handleHeight(way, world.getLevel(), costMap, connectionGenInfo);
         // 结果转为中心图坐标系
         handledHeightWay = handledHeightWay.stream().map(AStarPathfinder::pic2RegionPos).toList();
-        return connectWay(level, handledHeightWay, connectionGenInfo);
+        return connectWay(world, handledHeightWay, connectionGenInfo);
     }
 
     /**
@@ -249,7 +249,7 @@ public class RoutePlanner {
         int min = adPath.stream().mapToInt(p -> (int) p[2]).min().orElse(0);
         int framed2 = ((max - min) / (2*8)) + 1;
 
-        /*
+
         if (adPath.size() > framed2*2 && framed2*2 >= 3) {
             // 平滑中间
             List<double[]> adPath1 = new ArrayList<>();
@@ -288,7 +288,7 @@ public class RoutePlanner {
                     adPath.get(adPath.size() - 1 - i)[2] = lh * (1 - t) + eh * t;
                 }
             }
-        }*/
+        }
 
         return adPath.stream()
                 .map(arr -> Arrays.stream(arr)
@@ -303,7 +303,8 @@ public class RoutePlanner {
      * @param path 路线的端点
      * @return 连接后的复合曲线
      */
-    private ResultWay connectWay(ServerLevel level, List<int[]> path, CrossPlanner.ConnectionGenInfo con) {
+    private ResultWay connectWay(WorldGenRegion world, List<int[]> path, CrossPlanner.ConnectionGenInfo con) {
+        ServerLevel level = world.getLevel();
         ChunkGenerator gen = level.getChunkSource().getGenerator();
         RandomState cfg = level.getChunkSource().randomState();
 
@@ -311,7 +312,7 @@ public class RoutePlanner {
         List<Vec3> path0 = new ArrayList<>();
         List<Boolean> isBridge = new ArrayList<>();
 
-        for (int i = 0; i < path.size() - 12; i+=6) {
+        for (int i = 0; i < path.size() - 12; i+=3) {
             int[] point = path.get(i);
             path0.add(MyMth.inRegionPos2WorldPos(
                     regionPos,
@@ -325,6 +326,10 @@ public class RoutePlanner {
                 new Vec3(path.getLast()[0], path.getLast()[2], path.getLast()[1])
                         .multiply(16.0/samplingNum, 1, 16.0/samplingNum)
         ));
+
+        var a = path0.getLast();
+        System.out.println((int) a.x + " " + (int) a.y + " " + (int) a.z);
+        System.out.println("=======>>>> "+level.getNoiseBiome((int) a.x/4, (int) a.y, (int) a.z/4));
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
@@ -415,8 +420,8 @@ public class RoutePlanner {
                 double dA = thisPoint[4], dB = nextSameHeightPoint[4];
                 double iA = thisPoint[3], iB = nextSameHeightPoint[3];
                 //可能的桥 可能的隧道
-                boolean conditionBridge = hd < 0 && (iB - iA) * 12 * sec < dB - dA;
-                boolean conditionTunnel = hd > 0 && (iB - iA) * 9 * sec < dB - dA;
+                boolean conditionBridge = hd < 0 && (iB - iA) * 8 * sec < dB - dA;
+                boolean conditionTunnel = hd > 0 && (iB - iA) * 6 * sec < dB - dA;
                 if (conditionBridge || conditionTunnel) {
                     //调整高度
                     for (int k = j; k < nextPointIndex; k++) {

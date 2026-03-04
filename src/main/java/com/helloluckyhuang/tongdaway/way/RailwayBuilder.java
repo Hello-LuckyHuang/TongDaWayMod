@@ -3,7 +3,6 @@ package com.helloluckyhuang.tongdaway.way;
 import com.helloluckyhuang.tongdaway.TongDaWay;
 import com.helloluckyhuang.tongdaway.util.SaveWayData;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 
 import java.util.Map;
 import java.util.concurrent.*;
@@ -13,7 +12,7 @@ public class RailwayBuilder {
     private static long seed;
 
     private final Map<RegionPos, Future<?>> regionFutures = new ConcurrentHashMap<>();
-    public final Map<RegionPos, RailwayMap> regionRailways = new ConcurrentHashMap<>();
+    public final Map<RegionPos, WayMap> regionRailways = new ConcurrentHashMap<>();
     public final Map<RegionPos, int[][]> regionHeightMap = new ConcurrentHashMap<>();
     public final Map<RegionPos, int[][]> regionStructureMap = new ConcurrentHashMap<>();
 
@@ -48,7 +47,7 @@ public class RailwayBuilder {
         }
 
         // 尝试从本地数据中读取
-        RailwayMap savedData = SaveWayData.getRailwayMap(regionPos, level.getServer());
+        WayMap savedData = SaveWayData.getWayMap(regionPos, level.getServer());
         if (savedData != null) {
             regionRailways.put(regionPos, savedData);
             TongDaWay.LOGGER.info("Region {} Done! Read From Local Data", regionPos);
@@ -61,15 +60,15 @@ public class RailwayBuilder {
             if (!regionFutures.containsKey(regionPos)) {
                 var f = regionRailwayLoadPoolExecutor.submit(() -> {
                     // 生成铁路步骤...
-                    RailwayMap railwayMap = new RailwayMap(regionPos);
+                    WayMap wayMap = new WayMap(regionPos);
 
-                    railwayMap.startPlanningRoutes(level);
+                    wayMap.startPlanningRoutes(level);
 
                     // 放置路线规划结果
-                    regionRailways.put(regionPos, railwayMap);
+                    regionRailways.put(regionPos, wayMap);
 
                     //将数据保存到磁盘
-                    SaveWayData.putRailwayMap(regionPos, railwayMap, level.getServer());
+                    SaveWayData.putWayMap(regionPos, wayMap, level.getServer());
                 });
                 regionFutures.put(regionPos, f);
             }
