@@ -29,6 +29,9 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
     // 路口
     public static final RandomPool<CrossTemplate> cross = new RandomPool<>();
 
+    // 路上地物
+    public static final RandomPool<RoadFeatureTemplate> roadFeature = new RandomPool<>();
+
     // 路基
     public static final RandomPool<RoadTemplate> roadbed = new RandomPool<>();
 
@@ -105,19 +108,26 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
                             tagArray[i+1] = tags.get(i).getAsString();
                         }
                     // 加入结构池
-                    if (temClass.equals("cross")) {
-                        CrossTemplate crossTemplate = new CrossTemplate(rootTag, id, heightOffset);
-                        cross.add(crossTemplate, id, tagArray);
-                    } else if (temClass.equals("road")) {
-                        if (type.equals("bridge")) {
-                            // 桥梁单列处理
-                            int deckStart = GsonHelper.getAsInt(jsonobject, "deck_start");
-                            int deckEnd = GsonHelper.getAsInt(jsonobject, "deck_end");
-                            BridgeTemplate bridgeTemplate = new BridgeTemplate(rootTag, deckStart, deckEnd, heightOffset);
-                            bridge.add(bridgeTemplate, id, tagArray);
-                        } else {
-                            RoadTemplate roadTemplate = new RoadTemplate(rootTag, heightOffset);
-                            roadbed.add(roadTemplate, id, tagArray);
+                    switch (temClass) {
+                        case "cross" -> {
+                            CrossTemplate crossTemplate = new CrossTemplate(rootTag, id, heightOffset);
+                            cross.add(crossTemplate, id, tagArray);
+                        }
+                        case "road" -> {
+                            if (type.equals("bridge")) {
+                                // 桥梁单列处理
+                                int deckStart = GsonHelper.getAsInt(jsonobject, "deck_start");
+                                int deckEnd = GsonHelper.getAsInt(jsonobject, "deck_end");
+                                BridgeTemplate bridgeTemplate = new BridgeTemplate(rootTag, deckStart, deckEnd, heightOffset);
+                                bridge.add(bridgeTemplate, id, tagArray);
+                            } else {
+                                RoadTemplate roadTemplate = new RoadTemplate(rootTag, heightOffset);
+                                roadbed.add(roadTemplate, id, tagArray);
+                            }
+                        }
+                        case "road_feature" -> {
+                            RoadFeatureTemplate roadFeatureTemplate = new RoadFeatureTemplate(rootTag, heightOffset);
+                            roadFeature.add(roadFeatureTemplate, id, tagArray);
                         }
                     }
                 }

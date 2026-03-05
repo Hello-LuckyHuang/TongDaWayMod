@@ -36,41 +36,43 @@ public class CrossPlanner {
 
         long regionSeed = seed + regionPos.hashCode();
         List<CrossGenInfo> result = new ArrayList<>();
-        int[] pos = MyRandom.generatePoints(regionSeed, CHUNK_GROUP_SIZE);
-        ChunkPos chunkPos = new ChunkPos(MyMth.chunkPosXFromRegionPos(regionPos, pos[0]), MyMth.chunkPosZFromRegionPos(regionPos, pos[1]));
+        var points = MyRandom.generatePoints(regionSeed, CHUNK_GROUP_SIZE);
+        for (int[] pos : points) {
+            ChunkPos chunkPos = new ChunkPos(MyMth.chunkPosXFromRegionPos(regionPos, pos[0]), MyMth.chunkPosZFromRegionPos(regionPos, pos[1]));
 
-        int x = chunkPos.getBlockX(0);
-        int z = chunkPos.getBlockZ(0);
-        int y = gen.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE, level, cfg);
+            int x = chunkPos.getBlockX(0);
+            int z = chunkPos.getBlockZ(0);
+            int y = gen.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE, level, cfg);
 
-        int h = y;
+            int h = y;
 
-        // 使得站点的高度在一定区域内最小
-        int miny = 2550;
-        for (int ix = -2; ix < 3; ix++) {
-            for (int iz = -2; iz < 3; iz++) {
-                int ox = ix * 32 + x;
-                int oz = iz * 32 + z;
-                int ty = gen.getBaseHeight(ox, oz, Heightmap.Types.WORLD_SURFACE, level, cfg);
-                miny = Math.min(miny, ty);
+            // 使得站点的高度在一定区域内最小
+            int miny = 2550;
+            for (int ix = -2; ix < 3; ix++) {
+                for (int iz = -2; iz < 3; iz++) {
+                    int ox = ix * 32 + x;
+                    int oz = iz * 32 + z;
+                    int ty = gen.getBaseHeight(ox, oz, Heightmap.Types.WORLD_SURFACE, level, cfg);
+                    miny = Math.min(miny, ty);
+                }
             }
-        }
 
-        if (y - miny > 20)
-            h = miny;
+            if (y - miny > 20)
+                h = miny;
 
-        // 确保站点高度在 seaLevel ~ seaLevel + 增量
-        h = Math.max(h, level.getSeaLevel());
-        h = Math.min(h, level.getSeaLevel() + HEIGHT_MAX_INCREMENT);
-        // 根据高度决定生成地上还是地下车站
-        CrossTemplate cross;
-        int placeH = h;
-        if (h < y - 10) {
-            cross = ModStructureManager.getRandomUnderGroundCross(regionSeed);
-        } else {
-            cross = ModStructureManager.getRandomNormalCross(regionSeed);
+            // 确保站点高度在 seaLevel ~ seaLevel + 增量
+            h = Math.max(h, level.getSeaLevel());
+            h = Math.min(h, level.getSeaLevel() + HEIGHT_MAX_INCREMENT);
+            // 根据高度决定生成地上还是地下车站
+            CrossTemplate cross;
+            int placeH = h;
+            if (h < y - 10) {
+                cross = ModStructureManager.getRandomUnderGroundCross(regionSeed);
+            } else {
+                cross = ModStructureManager.getRandomNormalCross(regionSeed);
+            }
+            result.add(new CrossGenInfo(cross, new BlockPos(x, placeH, z)));
         }
-        result.add(new CrossGenInfo(cross, new BlockPos(x, placeH, z)));
 
         return result;
     }
@@ -79,7 +81,7 @@ public class CrossPlanner {
     public List<ConnectionGenInfo> generateConnections(ServerLevel level, long seed) {
         List<ConnectionGenInfo> result = new ArrayList<>();
 
-        List<CrossGenInfo> thisStations = generateCross(regionPos, level, seed);
+        List<CrossGenInfo> thisCross = generateCross(regionPos, level, seed);
 
         List<CrossGenInfo> north = generateCross(new RegionPos(regionPos.x(), regionPos.z()-1), level, seed);
         List<CrossGenInfo> south = generateCross(new RegionPos(regionPos.x(), regionPos.z()+1), level, seed);
@@ -87,9 +89,10 @@ public class CrossPlanner {
         List<CrossGenInfo> east = generateCross(new RegionPos(regionPos.x()+1, regionPos.z()), level, seed);
         List<CrossGenInfo> west = generateCross(new RegionPos(regionPos.x()-1, regionPos.z()), level, seed);
 
-        var thisAssignedCross = assignCross(thisStations);
+        var thisAssignedCross = assignCross(thisCross);
 
         var t = thisAssignedCross.getFirst();
+        System.out.println(thisCross.size());
         TongDaWay.LOGGER.info("====> StationPlanner: {} {} {} {}", (int)t.x, (int)t.y, (int)t.z, regionPos);
 
         var northAssignedExits = assignCross(north);
@@ -101,6 +104,14 @@ public class CrossPlanner {
         result.add(ConnectionGenInfo.getConnectionInfo(westAssignedExits.get(3), thisAssignedCross.get(2)));
         result.add(ConnectionGenInfo.getConnectionInfo(northAssignedExits.get(1), thisAssignedCross.get(0)));
         result.add(ConnectionGenInfo.getConnectionInfo(thisAssignedCross.get(1), southAssignedExits.get(0)));
+
+        if (thisCross.size() == 2) {
+            result.add(ConnectionGenInfo.getConnectionInfo(thisCross.get(0).placePos.getCenter(), thisCross.get(1).placePos.getCenter()));
+        } else if (thisCross.size() == 3) {
+            result.add(ConnectionGenInfo.getConnectionInfo(thisCross.get(0).placePos.getCenter(), thisCross.get(1).placePos.getCenter()));
+            result.add(ConnectionGenInfo.getConnectionInfo(thisCross.get(1).placePos.getCenter(), thisCross.get(2).placePos.getCenter()));
+            result.add(ConnectionGenInfo.getConnectionInfo(thisCross.get(2).placePos.getCenter(), thisCross.get(0).placePos.getCenter()));
+        }
 
         return result;
     }
@@ -141,12 +152,12 @@ public class CrossPlanner {
 
     // 站点放置信息(世界坐标系)
     public record CrossGenInfo(
-            CrossTemplate stationStructure,
+            CrossTemplate crossTemplate,
             BlockPos placePos
     ) {
         public CompoundTag toNBT() {
             CompoundTag tag = new CompoundTag();
-            tag.putInt("id", stationStructure.getId());
+            tag.putInt("id", crossTemplate.getId());
             tag.putInt("x", placePos.getX());
             tag.putInt("y", placePos.getY());
             tag.putInt("z", placePos.getZ());

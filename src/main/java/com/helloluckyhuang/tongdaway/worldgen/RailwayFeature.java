@@ -2,6 +2,7 @@ package com.helloluckyhuang.tongdaway.worldgen;
 
 import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
 import com.helloluckyhuang.tongdaway.structure.ModStructureManager;
+import com.helloluckyhuang.tongdaway.structure.RoadFeatureTemplate;
 import com.helloluckyhuang.tongdaway.way.RailwayBuilder;
 import com.helloluckyhuang.tongdaway.way.WayMap;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
@@ -12,8 +13,14 @@ import com.helloluckyhuang.tongdaway.util.MyMth;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,6 +29,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.Tags;
 import org.jetbrains.annotations.NotNull;
 
 public class RailwayFeature extends Feature<RailwayFeatureConfig> {
@@ -50,15 +58,30 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
             }
         }
 
+        // 放置路上地物
+        long seed = cPos.hashCode();
+        RoadFeatureTemplate lamp = ModStructureManager.roadFeature.get(seed, "lamp");
+        for (WayMap.RoadFeature feature : wayMap.roadFeature) {
+            var pos = feature.pos();
+            var center = pos.getCenter();
+            var type = feature.type();
+
+            if (type.equals("lamp")) {
+                if (lamp.getBoundChunks(center).contains(cPos)) {
+                    placeRoadFeature(lamp, cPos, center, chunk);
+                }
+            }
+        }
+
         // 放置路口
-        for (CrossPlanner.CrossGenInfo stationPlace : wayMap.cross) {
-            var station = stationPlace.stationStructure();
-            if (station == null) continue;
-            var pos = stationPlace.placePos();
+        for (CrossPlanner.CrossGenInfo crossPlace : wayMap.cross) {
+            var cross = crossPlace.crossTemplate();
+            if (cross == null) continue;
+            var pos = crossPlace.placePos();
             var center = pos.getCenter();
 
-            if (station.getBoundChunks(center).contains(cPos)) {
-                placeCross(station, cPos, center, chunk);
+            if (cross.getBoundChunks(center).contains(cPos)) {
+                placeCross(cross, cPos, center, chunk);
             }
         }
 
@@ -89,6 +112,25 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         }
     }
 
+    private static void placeRoadFeature(RoadFeatureTemplate feature, ChunkPos cPos, Vec3 center, ChunkAccess chunk) {
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                var test = new Vec3(cPos.x*16+x, center.y + 1, cPos.z*16+z);
+                if (!feature.isInVoxel(test.subtract(center).add(-0.5, -0.5, -0.5)))
+                    continue;
+                for (int oy = feature.getLowerBound(); oy < feature.getUpperBound(); oy++) {
+                    int y = oy + (int) center.y;
+                    var p = new Vec3(cPos.x*16+x, y, cPos.z*16+z).add(-0.5, -0.5, -0.5);
+                    var blockState = feature.getBlockState(p.subtract(center));
+                    if (blockState == null || blockState.isAir()) {
+                        continue;
+                    }
+                    chunk.setBlockState(new BlockPos(x, y, z), blockState, 3);
+                }
+            }
+        }
+    }
+
     private static void placeRoad(WayMap wayMap, ChunkPos cPos, ChunkAccess chunk, WorldGenLevel world) {
         var routes = wayMap.routeMap.get(cPos);
         for (CurveRoute route : routes) {
@@ -104,6 +146,10 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     // 获取一个线上点
                     var testPoint0 = new Vec3(cPos.x*16+x, 80, cPos.z*16+z);
                     CurveRoute.Frame frame = route.getFrame(testPoint0);
+
+                    String biomeIdString = route.getSegments().get(frame.segmentIndex).getBiome();
+                    Holder<Biome> biome = getBiome(biomeIdString, world.getLevel());
+                    if (biome.is(Tags.Biomes.IS_OCEAN)) continue;
 
                     var nearest0 = frame.nearestPoint;
 
@@ -121,7 +167,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     BlockPos nearestPos = new BlockPos((int) nearest0.x, (int) nearest0.y, (int) nearest0.z);
                     int h = world.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, nearestPos.getX(), nearestPos.getZ());
 
-                    boolean conditionBridge = nearest0.y > h + 5;
+                    boolean conditionBridge = (nearest0.y > h + 5) || (chunk.getBlockState(new BlockPos((int) nearest0.x, world.getSeaLevel()-2, (int) nearest0.z)).is(Blocks.WATER));
                     boolean conditionTunnel = nearest0.y < h - 8;
 
                     // 随机获取一个路基，使用路线段数作为种子来选择
@@ -200,5 +246,15 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
             }
 
         }
+    }
+
+    private static Holder<Biome> getBiome(String biomeIdString, ServerLevel level) {
+        var registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+        ResourceLocation rl = ResourceLocation.parse(biomeIdString);
+        ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, rl);
+
+        return registry.get(key).orElse(registry.getOrThrow(
+                ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("minecraft", "plains"))
+        ));
     }
 }

@@ -335,20 +335,11 @@ public class RoutePlanner {
                         .multiply(16.0/samplingNum, 1, 16.0/samplingNum)
         ));
 
-        var a = path0.getLast();
-        var biome = level.getNoiseBiome((int) a.x/4, (int) a.y, (int) a.z/4);
+//        var a = path0.getLast();
 //        System.out.println("=======>>>> ");
 //        System.out.println((int) a.x + " " + (int) a.y + " " + (int) a.z);
-        String biomeIdString = biome.getRegisteredName();
 //        System.out.println(biomeIdString);
 //        biome.tags().map(TagKey::location).toList().forEach(System.out::println);
-
-        var registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
-        ResourceLocation rl = ResourceLocation.parse(biomeIdString);
-        ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, rl);
-        Holder<Biome> holder = registry.get(key).orElse(registry.getOrThrow(
-                ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("minecraft", "plains"))
-        ));
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
@@ -366,18 +357,19 @@ public class RoutePlanner {
         ResultWay result = new ResultWay(new CurveRoute());
 
         // 车站起点连接
-        result.addLine(con.start(), first, biomeIdString, "normal");
+        result.addLine(level, con.start(), first, "normal");
 
         Vec3 startDir = first.subtract(con.start()).normalize();
         int i = 0;
         while (i < path0.size() - 1) {
             Vec3 endDir = (path0.get(i).subtract(path0.get(i+1))).normalize();
+
             result.addBezier(
+                    level,
                     path0.get(i),
                     startDir,
                     path0.get(i+1).subtract(path0.get(i)),
                     endDir,
-                    biomeIdString,
                     "normal"
             );
             i++;
@@ -386,7 +378,7 @@ public class RoutePlanner {
         }
 
         // 终点车站连接
-        result.addLine(last, con.end(), biomeIdString, "normal");
+        result.addLine(level, last, con.end(), "normal");
 
         return result;
     }
@@ -470,15 +462,19 @@ public class RoutePlanner {
     public record ResultWay(
             CurveRoute way
     ) {
-        public void addLine(Vec3 start, Vec3 end, String biome, String type) {
-            way.addSegment(new CurveRoute.LineSegment(start, end, biome, type));
+        public void addLine(ServerLevel level, Vec3 start, Vec3 end, String type) {
+            var biome = level.getNoiseBiome((int) start.x/4, (int) start.y, (int) start.z/4);
+            String biomeId = biome.getRegisteredName();
+            way.addSegment(new CurveRoute.LineSegment(start, end, biomeId, type));
         }
 
-        public void addBezier(Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String biome, String type) {
+        public void addBezier(ServerLevel level, Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String type) {
+            var biome = level.getNoiseBiome((int) start.x/4, (int) start.y, (int) start.z/4);
+            String biomeId = biome.getRegisteredName();
             if (Math.abs(startDir.dot(endDir)) > 0.9999 && startDir.dot(endOffset.normalize()) > 0.9999) {
-                way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biome, type));
+                way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biomeId, type));
             } else {
-                way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biome, type));
+                way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biomeId, type));
             }
         }
     }

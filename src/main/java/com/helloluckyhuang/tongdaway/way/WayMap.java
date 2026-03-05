@@ -11,10 +11,14 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
@@ -34,8 +38,10 @@ public class WayMap {
     //********每个区域的数据*********
     // 路线
     public final Map<ChunkPos, Set<CurveRoute>> routeMap = new ConcurrentHashMap<>();
-    // 车站
+    // 路口
     public final List<CrossPlanner.CrossGenInfo> cross = new ArrayList<>();
+    // 路上地物
+    public final List<RoadFeature> roadFeature = new ArrayList<>();
     //********每个区域的数据*********
 
     public WayMap(RegionPos regionPos) {
@@ -117,6 +123,8 @@ public class WayMap {
             // 设置出口坐标
             var route = routePlanner.getWay(way, costMap, connection, level);
             putChunk(route);
+            // 生成路径上的地物
+            genRoadFeature(route, level.getLevel());
         }
     }
 
@@ -141,7 +149,35 @@ public class WayMap {
         }
     }
 
-    public static int scopeLimit(int x, int z, int[] picStart, int[] picEnd) {
+    /**
+     * 生成路径上的地物
+     * @param route 路径
+     */
+    private void genRoadFeature(RoutePlanner.ResultWay route, ServerLevel level) {
+        ChunkGenerator gen = level.getChunkSource().getGenerator();
+        RandomState cfg = level.getChunkSource().randomState();
+
+        int step = 24;
+        var list = route.way().getSegments();
+        for (int i = 1; i < list.size() - 1; i++) {
+            var seg = list.get(i);
+            if (seg.getType().equals("bridge")) continue;
+
+            int num = (int) Math.floor(seg.getLength() / step);
+            for (int j = 0; j < num; j++) {
+                Vec3 p = seg.getPointAt(j * step / seg.getLength());
+                BlockPos pos = new BlockPos((int) Math.floor(p.x), (int) Math.floor(p.y), (int) Math.floor(p.z));
+                // 地下不生成地物
+                int h = gen.getBaseHeight(pos.getX(), pos.getZ(), Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
+                if (pos.getY() < h - 8) continue;
+
+                String type = "lamp";
+                roadFeature.add(new RoadFeature(pos, type, seg.getBiome()));
+            }
+        }
+    }
+
+    private static int scopeLimit(int x, int z, int[] picStart, int[] picEnd) {
         // 限制寻路区域
         int maxCost = 10000; // 区域外消耗
         int A = 96;  // 限制区域最大宽度
@@ -171,10 +207,15 @@ public class WayMap {
         CompoundTag nbt = new CompoundTag();
         nbt.put("RegionPos", regionPos.toNBT());
 
-        // 保存车站
-        ListTag stationTag = new ListTag();
-        cross.forEach(station -> stationTag.add(station.toNBT()));
-        nbt.put("Stations", stationTag);
+        // 保存路上地物
+        ListTag roadFeatureTag = new ListTag();
+        roadFeature.forEach(feature -> roadFeatureTag.add(feature.toNBT()));
+        nbt.put("RoadFeature", roadFeatureTag);
+
+        // 保存路口
+        ListTag crossTag = new ListTag();
+        cross.forEach(cross -> crossTag.add(cross.toNBT()));
+        nbt.put("Cross", crossTag);
 
         // 保存路线
         List<CurveRoute> palette = new ArrayList<>();
@@ -211,12 +252,21 @@ public class WayMap {
         RegionPos regionPos = RegionPos.fromNBT((ListTag) nbt.get("RegionPos"));
         WayMap wayMap = new WayMap(regionPos);
 
-        // 读取车站
-        ListTag stationTag = (ListTag) nbt.get("Stations");
-        if (stationTag != null) {
-            for (net.minecraft.nbt.Tag tag : stationTag) {
-                CrossPlanner.CrossGenInfo station = CrossPlanner.CrossGenInfo.fromNBT((CompoundTag) tag);
-                wayMap.cross.add(station);
+        // 读取路上地物
+        ListTag roadFeatureTag = (ListTag) nbt.get("RoadFeature");
+        if (roadFeatureTag != null) {
+            for (net.minecraft.nbt.Tag tag : roadFeatureTag) {
+                RoadFeature feature = RoadFeature.fromNBT((CompoundTag) tag);
+                wayMap.roadFeature.add(feature);
+            }
+        }
+
+        // 读取路口
+        ListTag crossTag = (ListTag) nbt.get("Cross");
+        if (crossTag != null) {
+            for (net.minecraft.nbt.Tag tag : crossTag) {
+                CrossPlanner.CrossGenInfo cross = CrossPlanner.CrossGenInfo.fromNBT((CompoundTag) tag);
+                wayMap.cross.add(cross);
             }
         }
 
@@ -244,5 +294,26 @@ public class WayMap {
         }
 
         return wayMap;
+    }
+
+    public record RoadFeature(BlockPos pos, String type, String biomeId) {
+        public CompoundTag toNBT() {
+            CompoundTag nbt = new CompoundTag();
+            nbt.putInt("PosX", pos.getX());
+            nbt.putInt("PosY", pos.getY());
+            nbt.putInt("PosZ", pos.getZ());
+            nbt.putString("Type", type);
+            nbt.putString("BiomeId", biomeId);
+            return nbt;
+        }
+
+        public static RoadFeature fromNBT(CompoundTag nbt) {
+            int x = nbt.getIntOr("PosX", 0);
+            int y = nbt.getIntOr("PosY", 0);
+            int z = nbt.getIntOr("PosZ", 0);
+            String type = nbt.getStringOr("Type", "");
+            String biomeId = nbt.getStringOr("BiomeId", "");
+            return new RoadFeature(new BlockPos(x, y, z), type, biomeId);
+        }
     }
 }

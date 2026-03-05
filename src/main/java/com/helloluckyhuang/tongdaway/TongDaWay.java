@@ -17,6 +17,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
+// 7281290734666671822
+
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(TongDaWay.MODID)
 public class TongDaWay {

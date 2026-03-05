@@ -491,19 +491,20 @@ public class CurveRoute {
         return new Vec3(pointTag.getDoubleOr(0, 0), pointTag.getDoubleOr(1, 0), pointTag.getDoubleOr(2, 0));
     }
 
+
     /*
     public static void main(String[] args) {
         CurveRoute route = new CurveRoute();
 
         // 1. 添加一条从 (0,0,0) 到 (10,0,0) 的直线
-        route.addSegment(new LineSegment(new Vec3(0, 0, 0), new Vec3(10, 10, 10)));
+        route.addSegment(new LineSegment(new Vec3(0, 0, 0), new Vec3(10, 10, 10), "", ""));
 
         // 2. 添加一段贝塞尔曲线
         route.addSegment(new BezierSegment(
                 new Vec3(10, 10, 10),
                 new Vec3(15, 15, 15),
                 new Vec3(25, 20, 30),
-                new Vec3(30, 20, 35)
+                new Vec3(30, 20, 35), "", ""
         ));
 
         System.out.println("Total Curve Length: " + route.getTotalLength());
@@ -531,8 +532,8 @@ public class CurveRoute {
         for (Vec3 p : raster) {
             System.out.printf("[%d, %d] ", (int)p.x, (int)p.z);
         }
-    }
-     */
+    }*/
+
     public static double[] intersect(Vec3 p1, Vec3 p2, Vec3 r, Vec3 s, Direction.Axis plane) {
         if (plane == Direction.Axis.X) {
             p1 = new Vec3(p1.y, 0, p1.z);
