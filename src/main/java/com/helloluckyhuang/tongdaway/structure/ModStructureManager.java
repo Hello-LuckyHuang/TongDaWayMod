@@ -97,14 +97,16 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
                 if (rootTag != null) {
                     // 计算结构id
                     int id = location.getPath().hashCode();
-                    // 获得标签数组(默认添加"is_overworld"标签)
-                    int length = tags.size()+2;
+                    // 获得标签数组(若为空,则默认添加"default"标签)
+                    int length = tags.isEmpty() ? 2 : tags.size()+1;
                     String[] tagArray = new String[length];
                     tagArray[0] = type;
-                    tagArray[1] = "c:is_overworld";
-                    for (int i = 0; i < tags.size(); i++) {
-                        tagArray[i+2] = tags.get(i).getAsString();
-                    }
+                    if (tags.isEmpty())
+                        tagArray[1] = "default";
+                    else
+                        for (int i = 0; i < tags.size(); i++) {
+                            tagArray[i+1] = tags.get(i).getAsString();
+                        }
                     // 加入结构池
                     switch (temClass) {
                         case "cross" -> {
@@ -138,8 +140,6 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
     // 随机获取用于生成的结构模板
     public static CrossTemplate getRandomNormalCross(long seed, String... tags) {
         String type = "normal";
-        if (tags.length == 0)
-            return cross.get(84_269 + seed*10000, type, "c:is_overworld");
         return cross.get(84_269 + seed*10000, type, tags);
 
 //     System.arraycopy(tags, 0, tagArray, 1, tags.length);
@@ -147,36 +147,26 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
 
     public static CrossTemplate getRandomUnderGroundCross(long seed, String... tags) {
         String type = "underground";
-        if (tags.length == 0)
-            return cross.get(71_1552 + seed*10000, type, "c:is_overworld");
         return cross.get(71_1552 + seed*10000, type, tags);
     }
 
     public static RoadTemplate getRandomGround(long seed, String... tags) {
         String type = "ground";
-        if (tags.length == 0)
-            return roadbed.get(84_270 + seed*10000, type, "c:is_overworld");
         return roadbed.get(84_270 + seed*10000, type, tags);
     }
 
     public static RoadTemplate getRandomTunnel(long seed, String... tags) {
         String type = "tunnel";
-        if (tags.length == 0)
-            return roadbed.get(71_1553 + seed*10000, type, "c:is_overworld");
         return roadbed.get(71_1553 + seed*10000, type, tags);
     }
 
     public static RoadTemplate getRandomShortBridge(long seed, String... tags) {
         String type = "short_bridge";
-        if (tags.length == 0)
-            return roadbed.get(71_1553 + seed*10000, type, "c:is_overworld");
         return roadbed.get(71_1553 + seed*10000, type, tags);
     }
 
     public static BridgeTemplate getRandomBridge(long seed, String... tags) {
         String type = "bridge";
-        if (tags.length == 0)
-            return bridge.get(90_318 + seed*10000, type, "c:is_overworld");
         return bridge.get(90_318 + seed*10000, type, tags);
     }
 }
