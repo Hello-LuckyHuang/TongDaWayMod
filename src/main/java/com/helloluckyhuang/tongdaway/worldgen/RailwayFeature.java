@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -92,9 +93,11 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         var routes = wayMap.routeMap.get(cPos);
         for (CurveRoute route : routes) {
             int seed = route.getSegments().size();
-            RoadTemplate ground = ModStructureManager.getRandomGround(seed);
             RoadTemplate bridge = ModStructureManager.getRandomBridge(seed);
+
+            RoadTemplate ground = ModStructureManager.getRandomGround(seed);
             RoadTemplate tunnel = ModStructureManager.getRandomTunnel(seed);
+            RoadTemplate shortBridge = ModStructureManager.getRandomShortBridge(seed);
 
             for (int x = 0; x < 16; x++) {
                 for (int z = 0; z < 16; z++) {
@@ -118,13 +121,13 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     BlockPos nearestPos = new BlockPos((int) nearest0.x, (int) nearest0.y, (int) nearest0.z);
                     int h = world.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, nearestPos.getX(), nearestPos.getZ());
 
-                    boolean conditionBridge = nearest0.y > h + 10;
-                    boolean conditionTunnel = nearest0.y < h - 9;
+                    boolean conditionBridge = nearest0.y > h + 5;
+                    boolean conditionTunnel = nearest0.y < h - 8;
 
                     // 随机获取一个路基，使用路线段数作为种子来选择
                     RoadTemplate structureTemplate;
                     if (conditionBridge) {
-                        structureTemplate = bridge;
+                        structureTemplate = shortBridge;
                     } else if (conditionTunnel) {
                         structureTemplate = tunnel;
                     } else {
@@ -138,7 +141,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     if (structureTemplate == null || !structureTemplate.isInVoxel(1, 1, z0))
                         continue;
 
-                    for (int oy = structureTemplate.getLowerBound(); oy <= structureTemplate.getUpperBound(); oy++) {
+                    for (int oy = structureTemplate.getUpperBound(); oy >= structureTemplate.getLowerBound(); oy--) {
                         int y = oy + (int) nearest0.y;
                         var testPoint = new Vec3(cPos.x*16+x, y, cPos.z*16+z);
                         var vec = testPoint.subtract(nearest0);
@@ -149,8 +152,16 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                         // 根据标架下坐标,从模板结构找到对应方块,并且放置
                         BlockState blockState = structureTemplate.getBlockState(localX, localY, localZ);
                         if (blockState != null) {
-                            BlockPos blockPos = new BlockPos(x, y, z);
-                            chunk.setBlockState(blockPos, blockState, 3);
+                            BlockPos blockPos = new BlockPos(cPos.getMinBlockX()+x, y, cPos.getMinBlockZ()+z);
+                            world.setBlock(blockPos, blockState, 3);
+                            BlockState updatedState = Block.updateFromNeighbourShapes(world.getBlockState(blockPos), world, blockPos);
+                            world.setBlock(blockPos, updatedState, 3);
+
+                            for (Direction direction : Direction.values()) {
+                                BlockPos neighborPos = blockPos.relative(direction);
+                                BlockState neighborState = Block.updateFromNeighbourShapes(world.getBlockState(neighborPos), world, neighborPos);
+                                world.setBlock(neighborPos, neighborState, 3);
+                            }
                         }
                     }
                     // 向下填充地基直到遇到支撑方块(隧道不考虑向下填充地基)
@@ -160,7 +171,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     for (int oy = structureTemplate.getLowerBound() - 1; oy > structureTemplate.getLowerBound() - 100; oy--) {
                         int y = oy + (int) nearest0.y;
 
-                        BlockPos blockPos = new BlockPos(x, y, z);
+                        BlockPos blockPos = new BlockPos(cPos.getMinBlockX()+x, y, cPos.getMinBlockZ()+z);
 
                         if (chunk.getBlockState(blockPos).isFaceSturdy(world, blockPos, Direction.UP)) {
                             break;
@@ -174,7 +185,15 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
 
                         BlockState blockState = structureTemplate.getBlockState(localX, localY, localZ);
                         if (blockState != null) {
-                            chunk.setBlockState(blockPos, blockState, 3);
+                            world.setBlock(blockPos, blockState, 3);
+                            BlockState updatedState = Block.updateFromNeighbourShapes(world.getBlockState(blockPos), world, blockPos);
+                            world.setBlock(blockPos, updatedState, 3);
+
+                            for (Direction direction : Direction.values()) {
+                                BlockPos neighborPos = blockPos.relative(direction);
+                                BlockState neighborState = Block.updateFromNeighbourShapes(world.getBlockState(neighborPos), world, neighborPos);
+                                world.setBlock(neighborPos, neighborState, 3);
+                            }
                         }
                     }
                 }

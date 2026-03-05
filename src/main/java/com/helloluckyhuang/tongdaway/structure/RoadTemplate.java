@@ -4,16 +4,14 @@ import net.minecraft.nbt.*;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class RoadTemplate extends ModTemplate {
-    private int roadbedHeight = 0;
-
-    public RoadTemplate(CompoundTag nbt) {
-        super(nbt);
+    public RoadTemplate(CompoundTag nbt, int heightOffset) {
+        super(nbt, heightOffset);
     }
 
     @Override
     public boolean isInVoxel(double x, double y, double z) {
         int originalX = (int) Math.floor(x) % getWidth();
-        int originalY = (int) Math.round(y + roadbedHeight + 1);
+        int originalY = (int) Math.round(y + heightOffset + 1);
         int originalZ = (int) Math.floor(z + getDepth() / 2.0);
 
         return originalX >= 0 && originalX < getWidth() && originalY >= 0 && originalY < getHeight() && originalZ >= 0 && originalZ < getDepth();
@@ -27,8 +25,12 @@ public class RoadTemplate extends ModTemplate {
         int originalX = (int) Math.floor(x) % getWidth();
 
         // 原始Y和Z坐标由局部坐标决定（考虑网格中心）
-        int originalY = (int) Math.round(y + roadbedHeight + 1);  // 从路面高度计y坐标
+        int originalY = (int) Math.round(y + heightOffset + 1);  // 从路面高度计y坐标
         int originalZ = (int) Math.floor(z + getDepth() / 2.0);
+
+        // 重复最底层方块
+        if (originalY < 0)
+            originalY = 0;
 
         return voxelGrid.getBlockState(originalX, originalY, originalZ);
     }

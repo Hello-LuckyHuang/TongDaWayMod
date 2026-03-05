@@ -21,10 +21,11 @@ import java.util.Optional;
 public abstract class ModTemplate {
     protected final VoxelGrid voxelGrid;
 
-    protected int heightOffset = 0;
+    protected final int heightOffset;
 
-    public ModTemplate(CompoundTag nbt) {
+    public ModTemplate(CompoundTag nbt, int heightOffset) {
         this.voxelGrid = parseStructureNBT(nbt);
+        this.heightOffset = heightOffset;
     }
 
     public int getWidth() {return voxelGrid.getWidth();}

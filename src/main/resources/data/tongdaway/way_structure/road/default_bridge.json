@@ -1,7 +1,7 @@
 {
   "class": "road",
   "type": "bridge",
-  "template": "tongdaway:road/stone_road_0",
+  "template": "tongdaway:road/stone_bridge_0",
 
   "deck_start": 0,
   "deck_end": 0,

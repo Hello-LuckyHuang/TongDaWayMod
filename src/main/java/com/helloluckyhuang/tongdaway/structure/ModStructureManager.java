@@ -73,6 +73,7 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
                 String temClass = GsonHelper.getAsString(jsonobject, "class");
                 String type = GsonHelper.getAsString(jsonobject, "type");
                 String nbt = GsonHelper.getAsString(jsonobject, "template");
+                int heightOffset = GsonHelper.getAsInt(jsonobject, "height_offset");
                 List<JsonElement> tags = GsonHelper.getAsJsonArray(jsonobject, "tags").asList();
                 ResourceLocation nbtLocation = ResourceLocation.fromNamespaceAndPath(
                         nbt.split(":")[0],
@@ -103,21 +104,19 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
                         for (int i = 0; i < tags.size(); i++) {
                             tagArray[i+1] = tags.get(i).getAsString();
                         }
-
                     // 加入结构池
                     if (temClass.equals("cross")) {
-                        CrossTemplate crossTemplate = new CrossTemplate(rootTag, id);
+                        CrossTemplate crossTemplate = new CrossTemplate(rootTag, id, heightOffset);
                         cross.add(crossTemplate, id, tagArray);
                     } else if (temClass.equals("road")) {
                         if (type.equals("bridge")) {
                             // 桥梁单列处理
                             int deckStart = GsonHelper.getAsInt(jsonobject, "deck_start");
                             int deckEnd = GsonHelper.getAsInt(jsonobject, "deck_end");
-                            int heightOffset = GsonHelper.getAsInt(jsonobject, "height_offset");
                             BridgeTemplate bridgeTemplate = new BridgeTemplate(rootTag, deckStart, deckEnd, heightOffset);
                             bridge.add(bridgeTemplate, id, tagArray);
                         } else {
-                            RoadTemplate roadTemplate = new RoadTemplate(rootTag);
+                            RoadTemplate roadTemplate = new RoadTemplate(rootTag, heightOffset);
                             roadbed.add(roadTemplate, id, tagArray);
                         }
                     }
@@ -154,6 +153,13 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
 
     public static RoadTemplate getRandomTunnel(long seed, String... tags) {
         String type = "tunnel";
+        if (tags.length == 0)
+            return roadbed.get(71_1553 + seed*10000, type, "is_overworld");
+        return roadbed.get(71_1553 + seed*10000, type, tags);
+    }
+
+    public static RoadTemplate getRandomShortBridge(long seed, String... tags) {
+        String type = "short_bridge";
         if (tags.length == 0)
             return roadbed.get(71_1553 + seed*10000, type, "is_overworld");
         return roadbed.get(71_1553 + seed*10000, type, tags);

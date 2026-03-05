@@ -5,13 +5,11 @@ import net.minecraft.nbt.CompoundTag;
 public class BridgeTemplate extends RoadTemplate {
     private final int deckStart;
     private final int deckEnd;
-    private final int heightOffset;
 
     public BridgeTemplate(CompoundTag nbt, int deckStart, int deckEnd, int heightOffset) {
-        super(nbt);
+        super(nbt, heightOffset);
         this.deckStart = deckStart;
         this.deckEnd = deckEnd;
-        this.heightOffset = heightOffset;
     }
 
     @Override

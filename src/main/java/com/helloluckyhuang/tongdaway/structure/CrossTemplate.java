@@ -12,8 +12,8 @@ import java.util.Set;
 public class CrossTemplate extends ModTemplate {
     private final int id;
 
-    public CrossTemplate(CompoundTag rootTag, int id) {
-        super(rootTag);
+    public CrossTemplate(CompoundTag rootTag, int id, int heightOffset) {
+        super(rootTag, heightOffset);
         this.id = id;
     }
 

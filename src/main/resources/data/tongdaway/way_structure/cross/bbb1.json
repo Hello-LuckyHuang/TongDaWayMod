@@ -2,5 +2,6 @@
   "class": "cross",
   "type": "underground",
   "template": "tongdaway:cross/large_cross_0",
+  "height_offset": 0,
   "tags": []
 }

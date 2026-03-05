@@ -255,7 +255,7 @@ public class RoutePlanner {
         //卷积平滑 保持首末点不变
         int max = adPath.stream().mapToInt(p -> (int) p[2]).max().orElse(0);
         int min = adPath.stream().mapToInt(p -> (int) p[2]).min().orElse(0);
-        int framed2 = ((max - min) / (2*8)) + 1;
+        int framed2 = ((max - min) / (2*10)) + 1;
 
 
         if (adPath.size() > framed2*2 && framed2*2 >= 3) {
@@ -337,11 +337,11 @@ public class RoutePlanner {
 
         var a = path0.getLast();
         var biome = level.getNoiseBiome((int) a.x/4, (int) a.y, (int) a.z/4);
-        System.out.println("=======>>>> ");
-        System.out.println((int) a.x + " " + (int) a.y + " " + (int) a.z);
+//        System.out.println("=======>>>> ");
+//        System.out.println((int) a.x + " " + (int) a.y + " " + (int) a.z);
         String biomeIdString = biome.getRegisteredName();
-        System.out.println(biomeIdString);
-        biome.tags().map(TagKey::toString).toList().forEach(System.out::println);
+//        System.out.println(biomeIdString);
+//        biome.tags().map(TagKey::location).toList().forEach(System.out::println);
 
         var registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
         ResourceLocation rl = ResourceLocation.parse(biomeIdString);
@@ -349,7 +349,6 @@ public class RoutePlanner {
         Holder<Biome> holder = registry.get(key).orElse(registry.getOrThrow(
                 ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("minecraft", "plains"))
         ));
-
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
@@ -367,7 +366,7 @@ public class RoutePlanner {
         ResultWay result = new ResultWay(new CurveRoute());
 
         // 车站起点连接
-        result.addLine(con.start(), first, "", "");
+        result.addLine(con.start(), first, biomeIdString, "normal");
 
         Vec3 startDir = first.subtract(con.start()).normalize();
         int i = 0;
@@ -378,8 +377,8 @@ public class RoutePlanner {
                     startDir,
                     path0.get(i+1).subtract(path0.get(i)),
                     endDir,
-                    "",
-                    ""
+                    biomeIdString,
+                    "normal"
             );
             i++;
 
@@ -387,7 +386,7 @@ public class RoutePlanner {
         }
 
         // 终点车站连接
-        result.addLine(last, con.end(), "", "");
+        result.addLine(last, con.end(), biomeIdString, "normal");
 
         return result;
     }
