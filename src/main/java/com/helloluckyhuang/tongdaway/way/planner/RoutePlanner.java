@@ -8,9 +8,15 @@ import com.helloluckyhuang.tongdaway.util.AdaptiveHeightSampler;
 import com.helloluckyhuang.tongdaway.util.CurveRoute;
 import com.helloluckyhuang.tongdaway.util.MyMth;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
@@ -330,8 +336,20 @@ public class RoutePlanner {
         ));
 
         var a = path0.getLast();
+        var biome = level.getNoiseBiome((int) a.x/4, (int) a.y, (int) a.z/4);
+        System.out.println("=======>>>> ");
         System.out.println((int) a.x + " " + (int) a.y + " " + (int) a.z);
-        System.out.println("=======>>>> "+level.getNoiseBiome((int) a.x/4, (int) a.y, (int) a.z/4));
+        String biomeIdString = biome.getRegisteredName();
+        System.out.println(biomeIdString);
+        biome.tags().map(TagKey::toString).toList().forEach(System.out::println);
+
+        var registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+        ResourceLocation rl = ResourceLocation.parse(biomeIdString);
+        ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, rl);
+        Holder<Biome> holder = registry.get(key).orElse(registry.getOrThrow(
+                ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("minecraft", "plains"))
+        ));
+
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
@@ -461,7 +479,7 @@ public class RoutePlanner {
             if (Math.abs(startDir.dot(endDir)) > 0.9999 && startDir.dot(endOffset.normalize()) > 0.9999) {
                 way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biome, type));
             } else {
-                way.addSegment(new CurveRoute.BezierSegment(start, startDir, endOffset, endDir, biome, type));
+                way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biome, type));
             }
         }
     }

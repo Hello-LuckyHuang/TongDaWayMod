@@ -10,23 +10,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class CrossTemplate extends ModTemplate {
-    public enum StationType {
-        NORMAL,
-        UNDER_GROUND
-    }
-
     private final int id;
 
-    private final StationType type;
-
-    public StationType getType() {
-        return type;
-    }
-
-    public CrossTemplate(CompoundTag rootTag, int id, StationType type) {
+    public CrossTemplate(CompoundTag rootTag, int id) {
         super(rootTag);
         this.id = id;
-        this.type = type;
     }
 
     @Override

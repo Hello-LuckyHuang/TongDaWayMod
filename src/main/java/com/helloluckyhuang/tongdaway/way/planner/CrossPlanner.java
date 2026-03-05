@@ -147,7 +147,6 @@ public class CrossPlanner {
         public CompoundTag toNBT() {
             CompoundTag tag = new CompoundTag();
             tag.putInt("id", stationStructure.getId());
-            tag.putString("type", stationStructure.getType().name());
             tag.putInt("x", placePos.getX());
             tag.putInt("y", placePos.getY());
             tag.putInt("z", placePos.getZ());
@@ -159,20 +158,7 @@ public class CrossPlanner {
             int x = tag.getIntOr("x", 0);
             int y = tag.getIntOr("y", 0);
             int z = tag.getIntOr("z", 0);
-            CrossTemplate.StationType type = CrossTemplate.StationType.valueOf(tag.getStringOr("type", ""));
-            CrossTemplate stationStructure = null;
-            switch (type) {
-                case NORMAL -> {
-                    if (ModStructureManager.normalCross.containsKey(id)) {
-                        stationStructure = ModStructureManager.normalCross.get(id);
-                    }
-                }
-                case UNDER_GROUND -> {
-                    if (ModStructureManager.undergroundCross.containsKey(id)) {
-                        stationStructure = ModStructureManager.undergroundCross.get(id);
-                    }
-                }
-            }
+            CrossTemplate stationStructure = ModStructureManager.cross.getById(id);
 
             return new CrossGenInfo(stationStructure, new BlockPos(x, y, z));
         }

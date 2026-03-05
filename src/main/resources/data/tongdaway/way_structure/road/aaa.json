@@ -1,5 +1,6 @@
 {
   "class": "road",
   "type": "ground",
-  "template": "tongdaway:road/stone_road_0"
+  "template": "tongdaway:road/stone_road_0",
+  "tags": []
 }

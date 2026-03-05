@@ -3,82 +3,98 @@ package com.helloluckyhuang.tongdaway.util;
 import java.util.*;
 
 public class RandomPool<E> {
-    private static class PoolObject<E> {
-        E obj;
+    // 存储标签与对象的映射
+    private final Map<String, List<PoolObject>> tagMap = new HashMap<>();
+    private final Map<Long, PoolObject> idMap = new HashMap<>();
+
+    // 内部PoolObject类，存储对象、ID、标签
+    private class PoolObject {
+        E object;
         long id;
         Set<String> tags;
 
-        public PoolObject(E obj, long id, Set<String> tags) {
-            this.obj = obj;
+        PoolObject(E object, long id, String... tags) {
+            this.object = object;
             this.id = id;
-            this.tags = tags;
+            this.tags = new HashSet<>(Arrays.asList(tags));
         }
     }
 
-    private final Map<Long, PoolObject<E>> objectById = new HashMap<>();
-    private final Map<String, List<PoolObject<E>>> objectsByTag = new HashMap<>();
-
-    // Add an object with tags and id
+    // 添加对象到池中
     public void add(E obj, long id, String... tags) {
-        Set<String> tagSet = new HashSet<>(Arrays.asList(tags));
-        PoolObject<E> poolObject = new PoolObject<>(obj, id, tagSet);
+        PoolObject poolObject = new PoolObject(obj, id, tags);
+        idMap.put(id, poolObject);
 
-        // Store by ID
-        objectById.put(id, poolObject);
-
-        // Store by tags
+        // 将对象根据标签加入到tagMap中
         for (String tag : tags) {
-            objectsByTag.computeIfAbsent(tag, k -> new ArrayList<>()).add(poolObject);
+            tagMap.computeIfAbsent(tag, k -> new ArrayList<>()).add(poolObject);
         }
     }
 
-    // Get a random object based on tags and seed
-    public E get(long seed, String... tags) {
-        // Collect potential objects based on tags
-        List<PoolObject<E>> candidateObjects = new ArrayList<>();
+    // 根据ID获取对象
+    public E getById(long id) {
+        PoolObject poolObject = idMap.get(id);
+        return poolObject != null ? poolObject.object : null;
+    }
 
-        // Try to find the best match: most tags
-        int maxTagCount = -1;
-        for (String tag : tags) {
-            List<PoolObject<E>> objects = objectsByTag.get(tag);
-            if (objects != null) {
-                for (PoolObject<E> poolObject : objects) {
-                    int commonTagsCount = 0;
-                    for (String tagInPool : poolObject.tags) {
-                        if (Arrays.asList(tags).contains(tagInPool)) {
-                            commonTagsCount++;
-                        }
-                    }
-                    if (commonTagsCount > maxTagCount) {
-                        candidateObjects.clear();
-                        candidateObjects.add(poolObject);
-                        maxTagCount = commonTagsCount;
-                    } else if (commonTagsCount == maxTagCount) {
-                        candidateObjects.add(poolObject);
-                    }
+    // 根据标签和种子获取对象
+    public E get(long seed, String tag1, String... tag2) {
+        // 获取所有带有tag1标签的对象
+        List<PoolObject> taggedObjects = tagMap.get(tag1);
+        if (taggedObjects == null || taggedObjects.isEmpty()) {
+            return null; // 如果没有tag1标签的对象，返回null
+        }
+
+        // 筛选出带有tag2标签的对象
+        List<PoolObject> filteredObjects = new ArrayList<>();
+        for (PoolObject obj : taggedObjects) {
+            if (obj.tags.containsAll(Arrays.asList(tag2))) {
+                filteredObjects.add(obj);
+            }
+        }
+
+        // 如果没有符合tag2标签的对象，选择带有"default"标签的对象
+        if (filteredObjects.isEmpty()) {
+            for (PoolObject obj : taggedObjects) {
+                if (obj.tags.contains("default")) {
+                    filteredObjects.add(obj);
                 }
             }
         }
 
-        // If no object found with the given tags, fallback to default
-        if (candidateObjects.isEmpty()) {
-            candidateObjects = objectsByTag.getOrDefault("default", new ArrayList<>());
-        }
-
-        // If there are still no objects, return null
-        if (candidateObjects.isEmpty()) {
+        // 如果仍然没有对象符合条件，返回null
+        if (filteredObjects.isEmpty()) {
             return null;
         }
 
-        // Use the seed to select a random object
+        // 使用seed进行随机选择
         Random random = new Random(seed);
-        int index = random.nextInt(candidateObjects.size());
-        return candidateObjects.get(index).obj;
+        PoolObject selected = filteredObjects.get(random.nextInt(filteredObjects.size()));
+        return selected.object;
     }
 
-    // Get an object by its id
-    public E getById(long id) {
-        PoolObject<E> poolObject = objectById.get(id);
-        return poolObject != null ? poolObject.obj : null;
+    public static void main(String[] args) {
+        // 创建RandomPool实例
+        RandomPool<String> pool = new RandomPool<>();
+
+        // 添加对象
+        pool.add("Apple", 1, "fruit", "red", "default", "juicy");
+        pool.add("Cherry", 6, "fruit", "red", "juicy");
+        pool.add("Orange", 5, "fruit", "juicy");
+        pool.add("Banana", 2, "fruit", "yellow");
+        pool.add("Carrot", 3, "vegetable", "orange", "default");
+        pool.add("Spinach", 4, "vegetable", "green");
+
+        // 获取ID为1的对象
+        System.out.println(pool.getById(1)); // 输出 "Apple"
+
+        // 获取带有"fruit"标签并且带有"red"标签的对象
+        System.out.println(pool.get(System.currentTimeMillis(), "fruit", "red", "juicy")); // 输出 "Apple"
+
+        // 获取带有"fruit"标签并且带有"default"标签的对象
+        System.out.println(pool.get(12345, "fruit")); // 输出 "Apple" 或 "Banana"（随机）
+
+        // 获取没有"fruit"标签的情况下，带有"default"标签的对象
+        System.out.println(pool.get(12345, "vegetable", "yellow")); // 输出 "Carrot" 或 "Spinach"（随机）
     }
 }

@@ -24,7 +24,7 @@ public class TongDaWay {
     public static final String MODID = "tongdaway";
     // Mod常量
     public static final int CHUNK_GROUP_SIZE = 128;  // 一个路线生成区域的大小
-    public static final int HEIGHT_MAX_INCREMENT = 100;  // 路线生成最大高度相对于海平面的增量
+    public static final int HEIGHT_MAX_INCREMENT = 120;  // 路线生成最大高度相对于海平面的增量
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
 

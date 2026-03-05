@@ -2,7 +2,7 @@ package com.helloluckyhuang.tongdaway.structure;
 
 import com.google.gson.*;
 import com.helloluckyhuang.tongdaway.TongDaWay;
-import com.helloluckyhuang.tongdaway.util.MyRandom;
+import com.helloluckyhuang.tongdaway.util.RandomPool;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
@@ -27,16 +27,13 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
     private static final String folder = "way_structure";
 
     // 路口
-    public static final Map<Integer, CrossTemplate> normalCross = new HashMap<>();
-    // 地下路口
-    public static final Map<Integer, CrossTemplate> undergroundCross = new HashMap<>();
+    public static final RandomPool<CrossTemplate> cross = new RandomPool<>();
 
-    // 路面路基
-    public static final Map<Integer, RoadTemplate> ground = new HashMap<>();
-    // 隧道
-    public static final Map<Integer, RoadTemplate> tunnel = new HashMap<>();
+    // 路基
+    public static final RandomPool<RoadTemplate> roadbed = new RandomPool<>();
+
     // 桥梁
-    public static final Map<Integer, BridgeTemplate> bridge = new HashMap<>();
+    public static final RandomPool<BridgeTemplate> bridge = new RandomPool<>();
 
     @SubscribeEvent
     public static void addReloadListeners(AddServerReloadListenersEvent event) {
@@ -73,9 +70,10 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
         resourceList.forEach((location, json) -> {
             try {
                 JsonObject jsonobject = json.getAsJsonObject();
-                String temType = GsonHelper.getAsString(jsonobject, "class");
+                String temClass = GsonHelper.getAsString(jsonobject, "class");
                 String type = GsonHelper.getAsString(jsonobject, "type");
                 String nbt = GsonHelper.getAsString(jsonobject, "template");
+                List<JsonElement> tags = GsonHelper.getAsJsonArray(jsonobject, "tags").asList();
                 ResourceLocation nbtLocation = ResourceLocation.fromNamespaceAndPath(
                         nbt.split(":")[0],
                         "structure/" + nbt.split(":")[1] + ".nbt"
@@ -93,36 +91,34 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
                 }
 
                 if (rootTag != null) {
+                    // 计算结构id
                     int id = location.getPath().hashCode();
-                    if (temType.equals("cross")) {
-                        switch (type) {
-                            case "normal" -> {
-                                CrossTemplate crossTemplate = new CrossTemplate(rootTag, id, CrossTemplate.StationType.NORMAL);
-                                normalCross.put(id, crossTemplate);
-                            }
-                            case "underground" -> {
-                                CrossTemplate crossTemplate = new CrossTemplate(rootTag, id, CrossTemplate.StationType.UNDER_GROUND);
-                                undergroundCross.put(id, crossTemplate);
-                            }
+                    // 获得标签数组(若为空,则默认添加"is_overworld"标签)
+                    int length = tags.isEmpty() ? 2 : tags.size()+1;
+                    String[] tagArray = new String[length];
+                    tagArray[0] = type;
+                    if (tags.isEmpty())
+                        tagArray[1] = "is_overworld";
+                    else
+                        for (int i = 0; i < tags.size(); i++) {
+                            tagArray[i+1] = tags.get(i).getAsString();
                         }
 
-                    } else if (temType.equals("road")) {
-                        switch (type) {
-                            case "ground" -> {
-                                RoadTemplate roadTemplate = new RoadTemplate(rootTag);
-                                ground.put(id, roadTemplate);
-                            }
-                            case "tunnel" -> {
-                                RoadTemplate roadTemplate = new RoadTemplate(rootTag);
-                                tunnel.put(id, roadTemplate);
-                            }
-                            case "bridge" -> {
-                                int deckStart = GsonHelper.getAsInt(jsonobject, "deck_start");
-                                int deckEnd = GsonHelper.getAsInt(jsonobject, "deck_end");
-                                int heightOffset = GsonHelper.getAsInt(jsonobject, "height_offset");
-                                BridgeTemplate bridgeTemplate = new BridgeTemplate(rootTag, deckStart, deckEnd, heightOffset);
-                                bridge.put(id, bridgeTemplate);
-                            }
+                    // 加入结构池
+                    if (temClass.equals("cross")) {
+                        CrossTemplate crossTemplate = new CrossTemplate(rootTag, id);
+                        cross.add(crossTemplate, id, tagArray);
+                    } else if (temClass.equals("road")) {
+                        if (type.equals("bridge")) {
+                            // 桥梁单列处理
+                            int deckStart = GsonHelper.getAsInt(jsonobject, "deck_start");
+                            int deckEnd = GsonHelper.getAsInt(jsonobject, "deck_end");
+                            int heightOffset = GsonHelper.getAsInt(jsonobject, "height_offset");
+                            BridgeTemplate bridgeTemplate = new BridgeTemplate(rootTag, deckStart, deckEnd, heightOffset);
+                            bridge.add(bridgeTemplate, id, tagArray);
+                        } else {
+                            RoadTemplate roadTemplate = new RoadTemplate(rootTag);
+                            roadbed.add(roadTemplate, id, tagArray);
                         }
                     }
                 }
@@ -133,43 +129,40 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
     }
 
     // 随机获取用于生成的结构模板
-    public static CrossTemplate getRandomNormalCross(long seed) {
-        if (normalCross.isEmpty()) {
-            return null;
-        }
+    public static CrossTemplate getRandomNormalCross(long seed, String... tags) {
+        String type = "normal";
+        if (tags.length == 0)
+            return cross.get(84_269 + seed*10000, type, "is_overworld");
+        return cross.get(84_269 + seed*10000, type, tags);
 
-        return MyRandom.getRandomValueFromMap(normalCross, 84_269 + seed*10000);
+//     System.arraycopy(tags, 0, tagArray, 1, tags.length);
     }
 
-    public static CrossTemplate getRandomUnderGroundCross(long seed) {
-        if (undergroundCross.isEmpty()) {
-            return null;
-        }
-
-        return MyRandom.getRandomValueFromMap(undergroundCross, 71_1551 + seed*10000);
+    public static CrossTemplate getRandomUnderGroundCross(long seed, String... tags) {
+        String type = "underground";
+        if (tags.length == 0)
+            return cross.get(71_1552 + seed*10000, type, "is_overworld");
+        return cross.get(71_1552 + seed*10000, type, tags);
     }
 
-    public static RoadTemplate getRandomGround(long seed) {
-        if (ground.isEmpty()) {
-            return null;
-        }
-
-        return MyRandom.getRandomValueFromMap(ground, 84_270 + seed*10000);
+    public static RoadTemplate getRandomGround(long seed, String... tags) {
+        String type = "ground";
+        if (tags.length == 0)
+            return roadbed.get(84_270 + seed*10000, type, "is_overworld");
+        return roadbed.get(84_270 + seed*10000, type, tags);
     }
 
-    public static RoadTemplate getRandomTunnel(long seed) {
-        if (tunnel.isEmpty()) {
-            return null;
-        }
-
-        return MyRandom.getRandomValueFromMap(tunnel, 71_1553 + seed*10000);
+    public static RoadTemplate getRandomTunnel(long seed, String... tags) {
+        String type = "tunnel";
+        if (tags.length == 0)
+            return roadbed.get(71_1553 + seed*10000, type, "is_overworld");
+        return roadbed.get(71_1553 + seed*10000, type, tags);
     }
 
-    public static BridgeTemplate getRandomBridge(long seed) {
-        if (bridge.isEmpty()) {
-            return null;
-        }
-
-        return MyRandom.getRandomValueFromMap(bridge, 90_318 + seed*10000);
+    public static BridgeTemplate getRandomBridge(long seed, String... tags) {
+        String type = "bridge";
+        if (tags.length == 0)
+            return bridge.get(90_318 + seed*10000, type, "is_overworld");
+        return bridge.get(90_318 + seed*10000, type, tags);
     }
 }

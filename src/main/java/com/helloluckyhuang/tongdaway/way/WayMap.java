@@ -44,6 +44,7 @@ public class WayMap {
 
     // 规划路线方法
     public void startPlanningRoutes(WorldGenRegion level) {
+        /*
         // 计算遗迹
         var serverLevel = level.getLevel();
         var registryAccess = level.registryAccess();
@@ -70,7 +71,7 @@ public class WayMap {
                             var structureRegistry = registryAccess.lookupOrThrow(Registries.STRUCTURE);
                             res.forEach((key, value) -> {
                                 String structureName = Objects.requireNonNull(structureRegistry.getKey(key)).toString();
-                                BlockPos pos = new BlockPos(protoChunk.getPos().x * 16, 0, protoChunk.getPos().z * 16);
+//                                BlockPos pos = new BlockPos(protoChunk.getPos().x * 16, 0, protoChunk.getPos().z * 16);
 //                                System.out.println(structureName + " " + pos);
                                 structures.add(structureName);
                             });
@@ -87,7 +88,7 @@ public class WayMap {
             executor.shutdown();
         } catch (InterruptedException e) {
             TongDaWay.LOGGER.error("Search Feature Err: ", e);
-        }
+        }*/
 
         // 生成损耗图
         RoutePlanner routePlanner = new RoutePlanner(regionPos);
@@ -108,7 +109,7 @@ public class WayMap {
             List<int[]> way = AStarPathfinder.findPath(costMap, picStart, picEnd,
                     (x, y) -> {
                         int scopeLimit = scopeLimit(x, y, picStart, picEnd);
-                        int heightLimit = costMap[x][y] < level.getSeaLevel()+2 ? 100 : 0;
+                        int heightLimit = costMap[x][y] < level.getSeaLevel()+4 ? 100 : 0;
                         int structLimit = costMapFindPath[x][y];
                         return scopeLimit + heightLimit + structLimit;
                     });

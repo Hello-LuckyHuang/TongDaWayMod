@@ -1,6 +1,6 @@
 {
   "class": "cross",
-  "type": "normal",
+  "type": "default",
   "template": "tongdaway:cross/large_cross_0",
-  "tags": []
+  "tags": ["is_overworld"]
 }

@@ -1,6 +1,6 @@
 {
   "class": "road",
-  "type": "tunnel",
+  "type": "default",
   "template": "tongdaway:road/stone_road_0",
-  "tags": []
+  "tags": ["is_overworld"]
 }
