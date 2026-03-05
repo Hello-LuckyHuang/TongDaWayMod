@@ -337,7 +337,9 @@ public class RoutePlanner {
 
 //        var a = path0.getLast();
 //        System.out.println("=======>>>> ");
+//        var biome = level.getNoiseBiome((int) a.x/4, (int) a.y, (int) a.z/4);
 //        System.out.println((int) a.x + " " + (int) a.y + " " + (int) a.z);
+//        String biomeIdString = biome.getRegisteredName();
 //        System.out.println(biomeIdString);
 //        biome.tags().map(TagKey::location).toList().forEach(System.out::println);
 

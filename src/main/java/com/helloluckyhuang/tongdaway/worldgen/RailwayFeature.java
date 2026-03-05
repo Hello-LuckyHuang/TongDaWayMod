@@ -18,6 +18,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
@@ -60,13 +61,16 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
 
         // 放置路上地物
         long seed = cPos.hashCode();
-        RoadFeatureTemplate lamp = ModStructureManager.roadFeature.get(seed, "lamp");
         for (WayMap.RoadFeature feature : wayMap.roadFeature) {
             var pos = feature.pos();
             var center = pos.getCenter();
             var type = feature.type();
 
+            var biome = getBiome(feature.biomeId(), world.getLevel());
+            var tags = getBiomeTags(biome);
+
             if (type.equals("lamp")) {
+                RoadFeatureTemplate lamp = ModStructureManager.roadFeature.get(seed, "lamp", tags);
                 if (lamp.getBoundChunks(center).contains(cPos)) {
                     placeRoadFeature(lamp, cPos, center, chunk);
                 }
@@ -253,8 +257,13 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         ResourceLocation rl = ResourceLocation.parse(biomeIdString);
         ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, rl);
 
-        return registry.get(key).orElse(registry.getOrThrow(
+        return registry.get(key)
+                .orElse(registry.getOrThrow(
                 ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("minecraft", "plains"))
         ));
+    }
+
+    private String[] getBiomeTags(Holder<Biome> biome) {
+        return biome.tags().map(TagKey::location).toList().stream().map(ResourceLocation::toString).toArray(String[]::new);
     }
 }

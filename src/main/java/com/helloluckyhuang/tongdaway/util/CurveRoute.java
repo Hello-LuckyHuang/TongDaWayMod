@@ -448,8 +448,8 @@ public class CurveRoute {
                 parameters.add(vec2NBT(bezier.p1));
                 parameters.add(vec2NBT(bezier.p2));
                 parameters.add(vec2NBT(bezier.p3));
-                parameters.add(StringTag.valueOf(bezier.type));
                 parameters.add(StringTag.valueOf(bezier.biome));
+                parameters.add(StringTag.valueOf(bezier.type));
             }
             curveTag.add(parameters);
         }
@@ -471,9 +471,9 @@ public class CurveRoute {
                 Vec3 p1 = nbt2Vec((ListTag) parameters.get(1));
                 Vec3 p2 = nbt2Vec((ListTag) parameters.get(2));
                 Vec3 p3 = nbt2Vec((ListTag) parameters.get(3));
-                String type = parameters.getStringOr(4, "");
-                String biome = parameters.getStringOr(5, "");
-                curve.addSegment(new BezierSegment(p0, p1, p2, p3, type, biome));
+                String biome = parameters.getStringOr(4, "");
+                String type = parameters.getStringOr(5, "");
+                curve.addSegment(new BezierSegment(p0, p1, p2, p3, biome, type));
             }
         }
         return curve;

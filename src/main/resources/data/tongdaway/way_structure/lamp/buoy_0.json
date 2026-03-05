@@ -1,0 +1,7 @@
+{
+  "class": "road_feature",
+  "type": "lamp",
+  "template": "tongdaway:lamp/buoy_0",
+  "height_offset": 2,
+  "tags": ["c:is_ocean"]
+}

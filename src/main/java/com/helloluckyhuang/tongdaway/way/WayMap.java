@@ -172,7 +172,7 @@ public class WayMap {
                 if (pos.getY() < h - 8) continue;
 
                 String type = "lamp";
-                roadFeature.add(new RoadFeature(pos, type, seg.getBiome()));
+                roadFeature.add(new RoadFeature(pos, type, seg.getBiome(), ""));
             }
         }
     }
@@ -296,7 +296,7 @@ public class WayMap {
         return wayMap;
     }
 
-    public record RoadFeature(BlockPos pos, String type, String biomeId) {
+    public record RoadFeature(BlockPos pos, String type, String biomeId, String notes) {
         public CompoundTag toNBT() {
             CompoundTag nbt = new CompoundTag();
             nbt.putInt("PosX", pos.getX());
@@ -304,6 +304,7 @@ public class WayMap {
             nbt.putInt("PosZ", pos.getZ());
             nbt.putString("Type", type);
             nbt.putString("BiomeId", biomeId);
+            nbt.putString("Notes", notes);
             return nbt;
         }
 
@@ -313,7 +314,8 @@ public class WayMap {
             int z = nbt.getIntOr("PosZ", 0);
             String type = nbt.getStringOr("Type", "");
             String biomeId = nbt.getStringOr("BiomeId", "");
-            return new RoadFeature(new BlockPos(x, y, z), type, biomeId);
+            String notes = nbt.getStringOr("Notes", "");
+            return new RoadFeature(new BlockPos(x, y, z), type, biomeId, notes);
         }
     }
 }

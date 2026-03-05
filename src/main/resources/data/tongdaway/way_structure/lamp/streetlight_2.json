@@ -1,7 +1,7 @@
 {
   "class": "road_feature",
   "type": "lamp",
-  "template": "tongdaway:lamp/streetlight_0",
+  "template": "tongdaway:lamp/streetlight_2",
   "height_offset": 1,
-  "tags": ["default"]
+  "tags": []
 }
