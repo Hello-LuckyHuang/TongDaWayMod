@@ -21,4 +21,20 @@ public class BridgeTemplate extends RoadTemplate {
     public int getLowerBound() {
         return -(heightOffset + 1);
     }
+
+    public int getDeckStart() {
+        return deckStart;
+    }
+
+    public int getDeckEnd() {
+        return voxelGrid.getWidth() - deckEnd;
+    }
+
+    public int getDeckLength() {
+        return deckEnd - deckStart + 1;
+    }
+
+    public int getTotalLength() {
+        return voxelGrid.getWidth();
+    }
 }

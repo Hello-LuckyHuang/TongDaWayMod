@@ -1,25 +1,25 @@
 package com.helloluckyhuang.tongdaway.worldgen;
 
-import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
-import com.helloluckyhuang.tongdaway.structure.ModStructureManager;
-import com.helloluckyhuang.tongdaway.structure.RoadFeatureTemplate;
+import com.helloluckyhuang.tongdaway.structure.*;
 import com.helloluckyhuang.tongdaway.util.BiomeGetter;
-import com.helloluckyhuang.tongdaway.way.RailwayBuilder;
+import com.helloluckyhuang.tongdaway.way.WayBuilder;
 import com.helloluckyhuang.tongdaway.way.WayMap;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
-import com.helloluckyhuang.tongdaway.structure.RoadTemplate;
 import com.helloluckyhuang.tongdaway.util.CurveRoute;
 import com.helloluckyhuang.tongdaway.util.MyMth;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.HangingSignBlockEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -28,6 +28,8 @@ import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.Tags;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 public class RailwayFeature extends Feature<RailwayFeatureConfig> {
     public RailwayFeature(Codec<RailwayFeatureConfig> codec) {
@@ -42,7 +44,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         WorldGenLevel world = ctx.level();
         ChunkAccess chunk = world.getChunk(cPos.x, cPos.z);
 
-        RailwayBuilder builder = RailwayBuilder.getInstance(ctx.level().getSeed());
+        WayBuilder builder = WayBuilder.getInstance(ctx.level().getSeed());
         if (builder == null) return false;
 
         WayMap wayMap = builder.regionRailways.get(regionPos);
@@ -65,11 +67,9 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
             var biome = BiomeGetter.getBiomeFromId(feature.biomeId(), world.getLevel());
             var tags = BiomeGetter.getBiomeTags(biome);
 
-            if (type.equals("lamp")) {
-                RoadFeatureTemplate lamp = ModStructureManager.roadFeature.get(seed, "lamp", tags);
-                if (lamp.getBoundChunks(center).contains(cPos)) {
-                    placeRoadFeature(lamp, cPos, center, chunk);
-                }
+            RoadFeatureTemplate lamp = ModStructureManager.roadFeature.get(seed, type, tags);
+            if (lamp.getBoundChunks(center).contains(cPos)) {
+                placeRoadFeature(lamp, cPos, center, chunk, world, feature.notes());
             }
         }
 
@@ -112,7 +112,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         }
     }
 
-    private static void placeRoadFeature(RoadFeatureTemplate feature, ChunkPos cPos, Vec3 center, ChunkAccess chunk) {
+    private static void placeRoadFeature(RoadFeatureTemplate feature, ChunkPos cPos, Vec3 center, ChunkAccess chunk, WorldGenLevel world, String note) {
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 var test = new Vec3(cPos.x*16+x, center.y + 1, cPos.z*16+z);
@@ -125,7 +125,32 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     if (blockState == null || blockState.isAir()) {
                         continue;
                     }
-                    chunk.setBlockState(new BlockPos(x, y, z), blockState, 3);
+                    BlockPos pos = new BlockPos(cPos.getMinBlockX()+x, y, cPos.getMinBlockZ()+z);
+                    world.setBlock(pos, blockState, 3);
+                    var be = world.getBlockEntity(pos);
+                    if (be instanceof SignBlockEntity) {
+                        Objects.requireNonNull(world.getLevel().getServer()).execute(() -> {
+                            SignBlockEntity sign = (SignBlockEntity) world.getBlockEntity(pos);
+                            if (sign != null) {
+                                sign.setLevel(world.getLevel());
+
+                                String[] notes = note.split("\n");
+                                var signText = sign.getFrontText();
+                                for (int i = 0; i < Math.min(notes.length, 4); i++) {
+                                    signText = signText.setMessage(i, Component.literal(notes[i]));
+                                }
+                                sign.setText(signText, true);
+
+                                var signText2 = sign.getBackText();
+                                for (int i = 0; i < Math.min(notes.length, 4); i++) {
+                                    signText2 = signText2.setMessage(i, Component.literal(notes[i]));
+                                }
+                                sign.setText(signText2, false);
+
+                                sign.setChanged();
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -146,7 +171,6 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     String type = seg.getType();
                     String biomeIdString = seg.getBiome();
                     Holder<Biome> biome = BiomeGetter.getBiomeFromId(biomeIdString, world.getLevel());
-//                    RoadTemplate bridge = ModStructureManager.getRandomBridge(seed);
 
                     if (biome.is(Tags.Biomes.IS_OCEAN)) continue;
 
@@ -184,6 +208,15 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     }
 
                     double localX = t * route.getTotalLength();
+                    if (structureTemplate instanceof BridgeTemplate bridge) {
+                        int bridgeLength = (int) seg.getLength();
+                        localX = frame.localU * seg.getLength();
+                        if (localX >= bridge.getDeckStart() && localX <= bridgeLength - bridge.getDeckEnd()) {
+                            localX = bridge.getDeckStart() + (localX % bridge.getDeckLength());
+                        } else if (localX > bridgeLength - bridge.getDeckEnd()) {
+                            localX = bridge.getTotalLength() - (bridgeLength - localX);
+                        }
+                    }
 
                     double z0 = vec0.dot(binormal0);
 

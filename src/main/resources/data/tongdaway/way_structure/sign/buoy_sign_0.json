@@ -1,0 +1,7 @@
+{
+  "class": "road_feature",
+  "type": "sign",
+  "template": "tongdaway:sign/buoy_sign_0",
+  "height_offset": 2,
+  "tags": ["c:is_ocean"]
+}

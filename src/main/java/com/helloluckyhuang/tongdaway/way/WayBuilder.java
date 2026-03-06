@@ -7,8 +7,8 @@ import net.minecraft.server.level.WorldGenRegion;
 import java.util.Map;
 import java.util.concurrent.*;
 
-public class RailwayBuilder {
-    private static RailwayBuilder instance;
+public class WayBuilder {
+    private static WayBuilder instance;
     private static long seed;
 
     private final Map<RegionPos, Future<?>> regionFutures = new ConcurrentHashMap<>();
@@ -20,19 +20,19 @@ public class RailwayBuilder {
     private final ThreadPoolExecutor regionRailwayLoadPoolExecutor = new ThreadPoolExecutor(64, 1024, 1, TimeUnit.DAYS, regionRailwayLoadQueue);
     private final WorldGenRegion level;
 
-    private RailwayBuilder(WorldGenRegion level) {
+    private WayBuilder(WorldGenRegion level) {
         this.level = level;
     }
-    public static synchronized RailwayBuilder getInstance(long seed, WorldGenRegion level) {
-        if (instance == null || RailwayBuilder.seed != seed) {
-            instance = new RailwayBuilder(level);
-            RailwayBuilder.seed = seed;
+    public static synchronized WayBuilder getInstance(long seed, WorldGenRegion level) {
+        if (instance == null || WayBuilder.seed != seed) {
+            instance = new WayBuilder(level);
+            WayBuilder.seed = seed;
         }
         return instance;
     }
 
-    public static synchronized RailwayBuilder getInstance(long seed) {
-        if (instance == null || RailwayBuilder.seed != seed) {
+    public static synchronized WayBuilder getInstance(long seed) {
+        if (instance == null || WayBuilder.seed != seed) {
             return null;
         }
         return instance;
@@ -40,7 +40,7 @@ public class RailwayBuilder {
 
     // 为区块生成铁路路线。如未生成则阻塞线程开始生成。如已生成直接返回。
     // 这里只生成规划路线，不实际放置路线！
-    public void generateRailway(RegionPos regionPos) {
+    public void generateWay(RegionPos regionPos) {
         // 如果路线已经生成，直接返回
         if (regionRailways.containsKey(regionPos)) {
             return;

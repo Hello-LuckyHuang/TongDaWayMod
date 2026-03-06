@@ -159,6 +159,8 @@ public class WayMap {
 
         int step = 24;
         var list = route.way().getSegments();
+        int length = 0;
+        int totalLength = (int) route.way().getTotalLength();
         for (int i = 1; i < list.size() - 1; i++) {
             var seg = list.get(i);
             if (seg.getType().equals("bridge")) continue;
@@ -171,9 +173,14 @@ public class WayMap {
                 int h = gen.getBaseHeight(pos.getX(), pos.getZ(), Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
                 if (pos.getY() < h - 8) continue;
 
-                String type = "lamp";
-                roadFeature.add(new RoadFeature(pos, type, seg.getBiome(), ""));
+                String showText = "§d§lWay\n"+length+"m \n=> "+totalLength+"m\n§6★";
+
+                String type = i % 8 == 0 ? "sign" : "lamp";
+                String notes = i % 8 == 0 ? showText : "";
+                roadFeature.add(new RoadFeature(pos, type, seg.getBiome(), notes));
             }
+
+            length += (int) seg.getLength();
         }
     }
 

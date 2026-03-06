@@ -1,0 +1,7 @@
+{
+  "class": "road_feature",
+  "type": "sign",
+  "template": "tongdaway:sign/sign_0",
+  "height_offset": 1,
+  "tags": ["default"]
+}

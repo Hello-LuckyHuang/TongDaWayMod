@@ -2,32 +2,21 @@ package com.helloluckyhuang.tongdaway.way.planner;
 
 import com.helloluckyhuang.tongdaway.TongDaWay;
 import com.helloluckyhuang.tongdaway.util.*;
-import com.helloluckyhuang.tongdaway.way.RailwayBuilder;
+import com.helloluckyhuang.tongdaway.way.WayBuilder;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.core.QuartPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.Tags;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -59,7 +48,7 @@ public class RoutePlanner {
                 if (Math.abs(i) == 1 && Math.abs(j) == 1)
                     continue;
                 RegionPos rPos = new RegionPos(regionPos.x() + i, regionPos.z() + j);
-                RailwayBuilder builder = RailwayBuilder.getInstance(level.getSeed());
+                WayBuilder builder = WayBuilder.getInstance(level.getSeed());
                 int[][] map;
                 if (builder != null) {
                     map = builder.regionHeightMap
@@ -91,7 +80,7 @@ public class RoutePlanner {
                 if (Math.abs(i) == 1 && Math.abs(j) == 1)
                     continue;
                 RegionPos rPos = new RegionPos(regionPos.x() + i, regionPos.z() + j);
-                RailwayBuilder builder = RailwayBuilder.getInstance(level.getSeed());
+                WayBuilder builder = WayBuilder.getInstance(level.getSeed());
                 int[][] map;
                 if (builder != null) {
                     map = builder.regionStructureMap
@@ -338,7 +327,8 @@ public class RoutePlanner {
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.OCEAN_FLOOR_WG, level, cfg);
-            isBridge.add(p.y - h > 5 || BiomeGetter.getBiome(level, p).is(Tags.Biomes.IS_RIVER));
+            var biome = BiomeGetter.getBiome(level, p);
+            isBridge.add(!biome.is(Tags.Biomes.IS_OCEAN) && (p.y - h > 5 || biome.is(Tags.Biomes.IS_RIVER)));
         }
 
         // 连接线路和车站
