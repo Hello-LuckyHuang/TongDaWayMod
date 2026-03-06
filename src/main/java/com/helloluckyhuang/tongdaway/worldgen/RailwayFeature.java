@@ -14,6 +14,7 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -26,7 +27,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.phys.Vec3;
@@ -139,11 +143,6 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         var routes = wayMap.routeMap.get(cPos);
         for (CurveRoute route : routes) {
             int seed = route.getSegments().size();
-            RoadTemplate bridge = ModStructureManager.getRandomBridge(seed);
-
-            RoadTemplate ground = ModStructureManager.getRandomGround(seed);
-            RoadTemplate tunnel = ModStructureManager.getRandomTunnel(seed);
-            RoadTemplate shortBridge = ModStructureManager.getRandomShortBridge(seed);
 
             for (int x = 0; x < 16; x++) {
                 for (int z = 0; z < 16; z++) {
@@ -153,6 +152,8 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
 
                     String biomeIdString = route.getSegments().get(frame.segmentIndex).getBiome();
                     Holder<Biome> biome = getBiome(biomeIdString, world.getLevel());
+//                    RoadTemplate bridge = ModStructureManager.getRandomBridge(seed);
+
                     if (biome.is(Tags.Biomes.IS_OCEAN)) continue;
 
                     var nearest0 = frame.nearestPoint;
@@ -177,11 +178,11 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     // 随机获取一个路基，使用路线段数作为种子来选择
                     RoadTemplate structureTemplate;
                     if (conditionBridge) {
-                        structureTemplate = shortBridge;
+                        structureTemplate = ModStructureManager.getRandomShortBridge(seed, getBiomeTags(biome));
                     } else if (conditionTunnel) {
-                        structureTemplate = tunnel;
+                        structureTemplate = ModStructureManager.getRandomTunnel(seed, getBiomeTags(biome));
                     } else {
-                        structureTemplate = ground;
+                        structureTemplate = ModStructureManager.getRandomGround(seed, getBiomeTags(biome));
                     }
 
                     double localX = t * route.getTotalLength();
@@ -263,7 +264,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         ));
     }
 
-    private String[] getBiomeTags(Holder<Biome> biome) {
+    private static String[] getBiomeTags(Holder<Biome> biome) {
         return biome.tags().map(TagKey::location).toList().stream().map(ResourceLocation::toString).toArray(String[]::new);
     }
 }

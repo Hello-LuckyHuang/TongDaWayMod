@@ -9,6 +9,7 @@ import com.helloluckyhuang.tongdaway.util.CurveRoute;
 import com.helloluckyhuang.tongdaway.util.MyMth;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -24,9 +25,12 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.Tags;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -465,19 +469,33 @@ public class RoutePlanner {
             CurveRoute way
     ) {
         public void addLine(ServerLevel level, Vec3 start, Vec3 end, String type) {
-            var biome = level.getNoiseBiome((int) start.x/4, (int) start.y, (int) start.z/4);
-            String biomeId = biome.getRegisteredName();
+            String biomeId = getBiomeId(level, start);
             way.addSegment(new CurveRoute.LineSegment(start, end, biomeId, type));
         }
 
         public void addBezier(ServerLevel level, Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String type) {
-            var biome = level.getNoiseBiome((int) start.x/4, (int) start.y, (int) start.z/4);
-            String biomeId = biome.getRegisteredName();
+            String biomeId = getBiomeId(level, start);
             if (Math.abs(startDir.dot(endDir)) > 0.9999 && startDir.dot(endOffset.normalize()) > 0.9999) {
                 way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biomeId, type));
             } else {
                 way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biomeId, type));
             }
+        }
+
+        private static @NotNull String getBiomeId(ServerLevel level, Vec3 pos) {
+            ChunkGenerator gen = level.getChunkSource().getGenerator();
+            var randomState = RandomState.create(
+                    ((NoiseBasedChunkGenerator) gen).generatorSettings().value(),
+                    level.registryAccess().lookupOrThrow(Registries.NOISE),
+                    level.getSeed()
+            );
+            var biome = gen.getBiomeSource().getNoiseBiome(
+                    QuartPos.fromBlock((int) pos.x),
+                    QuartPos.fromBlock((int) pos.y),
+                    QuartPos.fromBlock((int) pos.z),
+                    randomState.sampler()
+            );
+            return biome.getRegisteredName();
         }
     }
 }
