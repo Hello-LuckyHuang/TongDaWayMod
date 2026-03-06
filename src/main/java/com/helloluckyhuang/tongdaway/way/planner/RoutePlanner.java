@@ -336,21 +336,9 @@ public class RoutePlanner {
                         .multiply(16.0/samplingNum, 1, 16.0/samplingNum)
         ));
 
-//        var a = path0.getLast();
-//        System.out.println("=======>>>> ");
-//        var biome = level.getNoiseBiome((int) a.x/4, (int) a.y, (int) a.z/4);
-//        System.out.println((int) a.x + " " + (int) a.y + " " + (int) a.z);
-//        String biomeIdString = biome.getRegisteredName();
-//        System.out.println(biomeIdString);
-//        biome.tags().map(TagKey::location).toList().forEach(System.out::println);
-
         for (Vec3 p : path0) {
-            int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
-            if (h - p.y > 5) {
-                isBridge.add(true);
-            } else {
-                isBridge.add(false);
-            }
+            int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.OCEAN_FLOOR_WG, level, cfg);
+            isBridge.add(p.y - h > 5 || BiomeGetter.getBiome(level, p).is(Tags.Biomes.IS_RIVER));
         }
 
         // 连接线路和车站
@@ -365,6 +353,19 @@ public class RoutePlanner {
         Vec3 startDir = first.subtract(con.start()).normalize();
         int i = 0;
         while (i < path0.size() - 1) {
+            if (isBridge.get(i)) {
+                // 寻找片段终点
+                int end = i+1;
+                while (end < path0.size() - 1 && isBridge.get(end)) {
+                    end++;
+                }
+                if (end - i > 2) {
+                    result.addLine(level, path0.get(i), path0.get(end), "bridge");
+                    i = end;
+                    continue;
+                }
+            }
+
             Vec3 endDir = (path0.get(i).subtract(path0.get(i+1))).normalize();
 
             result.addBezier(

@@ -20,4 +20,9 @@ public record RegionPos(int x, int z) {
     public @NotNull String toString() {
         return x + "_" + z;
     }
+
+    @Override
+    public int hashCode() {
+        return x * 31 + z;
+    }
 }

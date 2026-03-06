@@ -56,7 +56,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         }
 
         // 放置路上地物
-        long seed = cPos.hashCode();
+        long seed = regionPos.hashCode();
         for (WayMap.RoadFeature feature : wayMap.roadFeature) {
             var pos = feature.pos();
             var center = pos.getCenter();
@@ -142,7 +142,9 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     var testPoint0 = new Vec3(cPos.x*16+x, 80, cPos.z*16+z);
                     CurveRoute.Frame frame = route.getFrame(testPoint0);
 
-                    String biomeIdString = route.getSegments().get(frame.segmentIndex).getBiome();
+                    var seg = route.getSegments().get(frame.segmentIndex);
+                    String type = seg.getType();
+                    String biomeIdString = seg.getBiome();
                     Holder<Biome> biome = BiomeGetter.getBiomeFromId(biomeIdString, world.getLevel());
 //                    RoadTemplate bridge = ModStructureManager.getRandomBridge(seed);
 
@@ -169,12 +171,16 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
 
                     // 随机获取一个路基，使用路线段数作为种子来选择
                     RoadTemplate structureTemplate;
-                    if (conditionBridge) {
-                        structureTemplate = ModStructureManager.getRandomShortBridge(seed, BiomeGetter.getBiomeTags(biome));
-                    } else if (conditionTunnel) {
-                        structureTemplate = ModStructureManager.getRandomTunnel(seed, BiomeGetter.getBiomeTags(biome));
+                    if (type.equals("bridge")) {
+                        structureTemplate = ModStructureManager.getRandomBridge(seed, BiomeGetter.getBiomeTags(biome));
                     } else {
-                        structureTemplate = ModStructureManager.getRandomGround(seed, BiomeGetter.getBiomeTags(biome));
+                        if (conditionBridge) {
+                            structureTemplate = ModStructureManager.getRandomShortBridge(seed, BiomeGetter.getBiomeTags(biome));
+                        } else if (conditionTunnel) {
+                            structureTemplate = ModStructureManager.getRandomTunnel(seed, BiomeGetter.getBiomeTags(biome));
+                        } else {
+                            structureTemplate = ModStructureManager.getRandomGround(seed, BiomeGetter.getBiomeTags(biome));
+                        }
                     }
 
                     double localX = t * route.getTotalLength();

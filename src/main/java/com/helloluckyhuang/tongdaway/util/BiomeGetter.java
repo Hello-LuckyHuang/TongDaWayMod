@@ -15,20 +15,23 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 public class BiomeGetter {
-    public static @NotNull String getBiomeId(ServerLevel level, Vec3 pos) {
+    public static Holder<Biome> getBiome(ServerLevel level, Vec3 pos) {
         ChunkGenerator gen = level.getChunkSource().getGenerator();
         var randomState = RandomState.create(
                 ((NoiseBasedChunkGenerator) gen).generatorSettings().value(),
                 level.registryAccess().lookupOrThrow(Registries.NOISE),
                 level.getSeed()
         );
-        var biome = gen.getBiomeSource().getNoiseBiome(
+        return gen.getBiomeSource().getNoiseBiome(
                 QuartPos.fromBlock((int) pos.x),
                 QuartPos.fromBlock((int) pos.y),
                 QuartPos.fromBlock((int) pos.z),
                 randomState.sampler()
         );
-        return biome.getRegisteredName();
+    }
+
+    public static @NotNull String getBiomeId(ServerLevel level, Vec3 pos) {
+        return getBiome(level, pos).getRegisteredName();
     }
 
     public static Holder<Biome> getBiomeFromId(String biomeIdString, ServerLevel level) {
