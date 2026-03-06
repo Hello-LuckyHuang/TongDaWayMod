@@ -1,12 +1,9 @@
 package com.helloluckyhuang.tongdaway.way.planner;
 
 import com.helloluckyhuang.tongdaway.TongDaWay;
+import com.helloluckyhuang.tongdaway.util.*;
 import com.helloluckyhuang.tongdaway.way.RailwayBuilder;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
-import com.helloluckyhuang.tongdaway.util.AStarPathfinder;
-import com.helloluckyhuang.tongdaway.util.AdaptiveHeightSampler;
-import com.helloluckyhuang.tongdaway.util.CurveRoute;
-import com.helloluckyhuang.tongdaway.util.MyMth;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -469,33 +466,17 @@ public class RoutePlanner {
             CurveRoute way
     ) {
         public void addLine(ServerLevel level, Vec3 start, Vec3 end, String type) {
-            String biomeId = getBiomeId(level, start);
+            String biomeId = BiomeGetter.getBiomeId(level, start);
             way.addSegment(new CurveRoute.LineSegment(start, end, biomeId, type));
         }
 
         public void addBezier(ServerLevel level, Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String type) {
-            String biomeId = getBiomeId(level, start);
+            String biomeId = BiomeGetter.getBiomeId(level, start);
             if (Math.abs(startDir.dot(endDir)) > 0.9999 && startDir.dot(endOffset.normalize()) > 0.9999) {
                 way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biomeId, type));
             } else {
                 way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biomeId, type));
             }
-        }
-
-        private static @NotNull String getBiomeId(ServerLevel level, Vec3 pos) {
-            ChunkGenerator gen = level.getChunkSource().getGenerator();
-            var randomState = RandomState.create(
-                    ((NoiseBasedChunkGenerator) gen).generatorSettings().value(),
-                    level.registryAccess().lookupOrThrow(Registries.NOISE),
-                    level.getSeed()
-            );
-            var biome = gen.getBiomeSource().getNoiseBiome(
-                    QuartPos.fromBlock((int) pos.x),
-                    QuartPos.fromBlock((int) pos.y),
-                    QuartPos.fromBlock((int) pos.z),
-                    randomState.sampler()
-            );
-            return biome.getRegisteredName();
         }
     }
 }

@@ -2,6 +2,7 @@ package com.helloluckyhuang.tongdaway.way.planner;
 
 import com.helloluckyhuang.tongdaway.TongDaWay;
 import com.helloluckyhuang.tongdaway.structure.ModStructureManager;
+import com.helloluckyhuang.tongdaway.util.BiomeGetter;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
 import com.helloluckyhuang.tongdaway.util.MyMth;
@@ -63,13 +64,18 @@ public class CrossPlanner {
             // 确保站点高度在 seaLevel ~ seaLevel + 增量
             h = Math.max(h, level.getSeaLevel());
             h = Math.min(h, level.getSeaLevel() + HEIGHT_MAX_INCREMENT);
+
+            String biomeId = BiomeGetter.getBiomeId(level, new Vec3(x, y, z));
+            var biome = BiomeGetter.getBiomeFromId(biomeId, level);
+            String[] tags = BiomeGetter.getBiomeTags(biome);
+
             // 根据高度决定生成地上还是地下车站
             CrossTemplate cross;
             int placeH = h;
             if (h < y - 10) {
-                cross = ModStructureManager.getRandomUnderGroundCross(regionSeed);
+                cross = ModStructureManager.getRandomUnderGroundCross(regionSeed, tags);
             } else {
-                cross = ModStructureManager.getRandomNormalCross(regionSeed);
+                cross = ModStructureManager.getRandomNormalCross(regionSeed, tags);
             }
             result.add(new CrossGenInfo(cross, new BlockPos(x, placeH, z)));
         }

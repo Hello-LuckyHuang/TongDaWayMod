@@ -3,6 +3,7 @@ package com.helloluckyhuang.tongdaway.worldgen;
 import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
 import com.helloluckyhuang.tongdaway.structure.ModStructureManager;
 import com.helloluckyhuang.tongdaway.structure.RoadFeatureTemplate;
+import com.helloluckyhuang.tongdaway.util.BiomeGetter;
 import com.helloluckyhuang.tongdaway.way.RailwayBuilder;
 import com.helloluckyhuang.tongdaway.way.WayMap;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
@@ -14,12 +15,6 @@ import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
-import net.minecraft.core.QuartPos;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
@@ -27,10 +22,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
-import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.phys.Vec3;
@@ -70,8 +62,8 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
             var center = pos.getCenter();
             var type = feature.type();
 
-            var biome = getBiome(feature.biomeId(), world.getLevel());
-            var tags = getBiomeTags(biome);
+            var biome = BiomeGetter.getBiomeFromId(feature.biomeId(), world.getLevel());
+            var tags = BiomeGetter.getBiomeTags(biome);
 
             if (type.equals("lamp")) {
                 RoadFeatureTemplate lamp = ModStructureManager.roadFeature.get(seed, "lamp", tags);
@@ -151,7 +143,7 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     CurveRoute.Frame frame = route.getFrame(testPoint0);
 
                     String biomeIdString = route.getSegments().get(frame.segmentIndex).getBiome();
-                    Holder<Biome> biome = getBiome(biomeIdString, world.getLevel());
+                    Holder<Biome> biome = BiomeGetter.getBiomeFromId(biomeIdString, world.getLevel());
 //                    RoadTemplate bridge = ModStructureManager.getRandomBridge(seed);
 
                     if (biome.is(Tags.Biomes.IS_OCEAN)) continue;
@@ -178,11 +170,11 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
                     // 随机获取一个路基，使用路线段数作为种子来选择
                     RoadTemplate structureTemplate;
                     if (conditionBridge) {
-                        structureTemplate = ModStructureManager.getRandomShortBridge(seed, getBiomeTags(biome));
+                        structureTemplate = ModStructureManager.getRandomShortBridge(seed, BiomeGetter.getBiomeTags(biome));
                     } else if (conditionTunnel) {
-                        structureTemplate = ModStructureManager.getRandomTunnel(seed, getBiomeTags(biome));
+                        structureTemplate = ModStructureManager.getRandomTunnel(seed, BiomeGetter.getBiomeTags(biome));
                     } else {
-                        structureTemplate = ModStructureManager.getRandomGround(seed, getBiomeTags(biome));
+                        structureTemplate = ModStructureManager.getRandomGround(seed, BiomeGetter.getBiomeTags(biome));
                     }
 
                     double localX = t * route.getTotalLength();
@@ -251,20 +243,5 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
             }
 
         }
-    }
-
-    private static Holder<Biome> getBiome(String biomeIdString, ServerLevel level) {
-        var registry = level.registryAccess().lookupOrThrow(Registries.BIOME);
-        ResourceLocation rl = ResourceLocation.parse(biomeIdString);
-        ResourceKey<Biome> key = ResourceKey.create(Registries.BIOME, rl);
-
-        return registry.get(key)
-                .orElse(registry.getOrThrow(
-                ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("minecraft", "plains"))
-        ));
-    }
-
-    private static String[] getBiomeTags(Holder<Biome> biome) {
-        return biome.tags().map(TagKey::location).toList().stream().map(ResourceLocation::toString).toArray(String[]::new);
     }
 }
