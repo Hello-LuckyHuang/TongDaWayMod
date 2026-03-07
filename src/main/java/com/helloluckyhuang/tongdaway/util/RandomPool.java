@@ -171,7 +171,7 @@ public class RandomPool<E> {
         return set.isEmpty() ? Collections.emptySet() : set;
     }
 
-    public static void main(String[] args) {
+    public static void main111(String[] args) {
         System.out.println(Tags.Biomes.IS_OCEAN.location());
 
         // 创建RandomPool实例

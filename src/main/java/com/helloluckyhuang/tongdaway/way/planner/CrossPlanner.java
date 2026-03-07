@@ -97,9 +97,8 @@ public class CrossPlanner {
 
         var thisAssignedCross = assignCross(thisCross);
 
-        var t = thisAssignedCross.getFirst();
-        System.out.println(thisCross.size());
-        TongDaWay.LOGGER.info("====> StationPlanner: {} {} {} {}", (int)t.x, (int)t.y, (int)t.z, regionPos);
+//        var t = thisAssignedCross.getFirst();
+//        TongDaWay.LOGGER.info("====> CrossPlanner: {} {} {} {}", (int)t.x, (int)t.y, (int)t.z, regionPos);
 
         var northAssignedExits = assignCross(north);
         var southAssignedExits = assignCross(south);
@@ -175,9 +174,9 @@ public class CrossPlanner {
             int x = tag.getIntOr("x", 0);
             int y = tag.getIntOr("y", 0);
             int z = tag.getIntOr("z", 0);
-            CrossTemplate stationStructure = ModStructureManager.cross.getById(id);
+            CrossTemplate crossStructure = ModStructureManager.cross.getById(id);
 
-            return new CrossGenInfo(stationStructure, new BlockPos(x, y, z));
+            return new CrossGenInfo(crossStructure, new BlockPos(x, y, z));
         }
     }
 
@@ -195,14 +194,15 @@ public class CrossPlanner {
     ) {
         public static ConnectionGenInfo getConnectionInfo(Vec3 A, Vec3 B) {
                 Vec3 dir = B.subtract(A).normalize();
+                int scale = 30;
                 int[] start = new int[] {
-                        (int) A.add(dir.scale(30)).x,
-                        (int) A.add(dir.scale(30)).z,
+                        (int) A.add(dir.scale(scale)).x,
+                        (int) A.add(dir.scale(scale)).z,
                         (int) A.y
                 };
                 int[] end = new int[] {
-                        (int) B.add(dir.reverse().scale(30)).x,
-                        (int) B.add(dir.reverse().scale(30)).z,
+                        (int) B.add(dir.reverse().scale(scale)).x,
+                        (int) B.add(dir.reverse().scale(scale)).z,
                         (int) B.y
                 };
 

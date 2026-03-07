@@ -103,9 +103,9 @@ public class WayMap {
         int[][] costMapFindPath = routePlanner.getStructureCostMap(level);
 
         // 生成路口位置和连接规划
-        CrossPlanner stationPlanner = new CrossPlanner(regionPos);
+        CrossPlanner crossPlanner = new CrossPlanner(regionPos);
         cross.addAll(CrossPlanner.generateCross(regionPos, level.getLevel(), level.getSeed()));
-        var connections = stationPlanner.generateConnections(level.getLevel(), level.getSeed());
+        var connections = crossPlanner.generateConnections(level.getLevel(), level.getSeed());
         // 生成路线图
 //        List<List<int[]>> test = new ArrayList<>();
         for (CrossPlanner.ConnectionGenInfo connection : connections) {

@@ -12,13 +12,13 @@ import net.neoforged.neoforge.common.world.BiomeModifiers;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 public class ModBiomeModifiers {
-    public static final ResourceKey<BiomeModifier> ADD_RAILWAY_AND_STATION = registerKey("add_railway_and_station");
+    public static final ResourceKey<BiomeModifier> ADD_WAY_AND_CROSS = registerKey("add_way_and_cross");
     public static void bootstrap(net.minecraft.data.worldgen.BootstrapContext<BiomeModifier> context) {
         var placedFeatures = context.lookup(Registries.PLACED_FEATURE);
         var biomes = context.lookup(Registries.BIOME);
-        context.register(ADD_RAILWAY_AND_STATION, new BiomeModifiers.AddFeaturesBiomeModifier(
+        context.register(ADD_WAY_AND_CROSS, new BiomeModifiers.AddFeaturesBiomeModifier(
                 biomes.getOrThrow(BiomeTags.IS_OVERWORLD),
-                HolderSet.direct(placedFeatures.getOrThrow(ModPlacements.RAILWAY_PLACED_FEATURE_KEY)),
+                HolderSet.direct(placedFeatures.getOrThrow(ModPlacements.WAY_PLACED_FEATURE_KEY)),
                 GenerationStep.Decoration.UNDERGROUND_ORES));
 
     }

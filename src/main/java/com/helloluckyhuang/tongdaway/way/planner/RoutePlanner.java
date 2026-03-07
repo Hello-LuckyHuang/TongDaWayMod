@@ -141,7 +141,6 @@ public class RoutePlanner {
 
         var dimensionType = level.dimensionType();
         LevelHeightAccessor levelHeightAccessor = LevelHeightAccessor.create(dimensionType.minY(), dimensionType.height());
-        var biomeRegistry = registryAccess.lookupOrThrow(Registries.BIOME);
 
         List<BlockPos> structurePos = new ArrayList<>();
 
@@ -328,7 +327,70 @@ public class RoutePlanner {
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.OCEAN_FLOOR_WG, level, cfg);
             var biome = BiomeGetter.getBiome(level, p);
-            isBridge.add(!biome.is(Tags.Biomes.IS_OCEAN) && (p.y - h > 5 || biome.is(Tags.Biomes.IS_RIVER)));
+            isBridge.add(!biome.is(Tags.Biomes.IS_OCEAN) && (p.y - h > 5));
+        }
+
+        int n = isBridge.size();
+        int m = 1;
+
+        // ---------- 1. 删除长度 < 3 的 true 片段 ----------
+        int i = 0;
+        while (i < n) {
+            if (!isBridge.get(i)) {
+                i++;
+                continue;
+            }
+
+            int start = i;
+            while (i < n && isBridge.get(i)) {
+                i++;
+            }
+            int end = i - 1;
+
+            if (end - start + 1 < 3) {
+                for (int j = start; j <= end; j++) {
+                    isBridge.set(j, false);
+                }
+            }
+        }
+
+        // ---------- 2. 扩展 true 片段 ----------
+        boolean[] mark = new boolean[n];
+
+        i = 0;
+        while (i < n) {
+            if (!isBridge.get(i)) {
+                i++;
+                continue;
+            }
+
+            int start = i;
+            while (i < n && isBridge.get(i)) {
+                i++;
+            }
+            int end = i - 1;
+
+            // 左侧扩展
+            for (int j = 1; j <= m; j++) {
+                int idx = start - j;
+                if (idx >= 0 && !isBridge.get(idx)) {
+                    mark[idx] = true;
+                }
+            }
+
+            // 右侧扩展
+            for (int j = 1; j <= m; j++) {
+                int idx = end + j;
+                if (idx < n && !isBridge.get(idx)) {
+                    mark[idx] = true;
+                }
+            }
+        }
+
+        for (int j = 0; j < n; j++) {
+            if (mark[j]) {
+                isBridge.set(j, true);
+            }
         }
 
         // 连接线路和车站
@@ -341,32 +403,30 @@ public class RoutePlanner {
         result.addLine(level, con.start(), first, "normal");
 
         Vec3 startDir = first.subtract(con.start()).normalize();
-        int i = 0;
-        while (i < path0.size() - 1) {
-            if (isBridge.get(i)) {
+        int ii = 0;
+        while (ii < path0.size() - 1) {
+            if (isBridge.get(ii)) {
                 // 寻找片段终点
-                int end = i+1;
+                int end = ii+1;
                 while (end < path0.size() - 1 && isBridge.get(end)) {
                     end++;
                 }
-                if (end - i > 2) {
-                    result.addLine(level, path0.get(i), path0.get(end), "bridge");
-                    i = end;
-                    continue;
-                }
+                result.addLine(level, path0.get(ii), path0.get(end), "bridge");
+                ii = end;
+                continue;
             }
 
-            Vec3 endDir = (path0.get(i).subtract(path0.get(i+1))).normalize();
+            Vec3 endDir = (path0.get(ii).subtract(path0.get(ii+1))).normalize();
 
             result.addBezier(
                     level,
-                    path0.get(i),
+                    path0.get(ii),
                     startDir,
-                    path0.get(i+1).subtract(path0.get(i)),
+                    path0.get(ii+1).subtract(path0.get(ii)),
                     endDir,
                     "normal"
             );
-            i++;
+            ii++;
 
             startDir = endDir.reverse();
         }

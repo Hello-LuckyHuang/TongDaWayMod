@@ -18,7 +18,6 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.HangingSignBlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -31,14 +30,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public class RailwayFeature extends Feature<RailwayFeatureConfig> {
-    public RailwayFeature(Codec<RailwayFeatureConfig> codec) {
+public class WayFeature extends Feature<WayFeatureConfig> {
+    public WayFeature(Codec<WayFeatureConfig> codec) {
         super(codec);
     }
 
     // -5732913011330067995
     @Override
-    public boolean place(@NotNull FeaturePlaceContext<RailwayFeatureConfig> ctx) {
+    public boolean place(@NotNull FeaturePlaceContext<WayFeatureConfig> ctx) {
         ChunkPos cPos = new ChunkPos(ctx.origin());
         RegionPos regionPos = MyMth.regionPosFromChunkPos(cPos);
         WorldGenLevel world = ctx.level();
@@ -47,11 +46,11 @@ public class RailwayFeature extends Feature<RailwayFeatureConfig> {
         WayBuilder builder = WayBuilder.getInstance(ctx.level().getSeed());
         if (builder == null) return false;
 
-        WayMap wayMap = builder.regionRailways.get(regionPos);
+        WayMap wayMap = builder.regionWays.get(regionPos);
         if (wayMap == null) return false;
 
         // 根据路线生成路基
-        if (builder.regionRailways.containsKey(regionPos)) {
+        if (builder.regionWays.containsKey(regionPos)) {
             if (wayMap.routeMap.containsKey(cPos)) {
                 placeRoad(wayMap, cPos, chunk, world);
             }

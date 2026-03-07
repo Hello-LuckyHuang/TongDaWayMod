@@ -34,7 +34,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             wayBuilder.generateWay(regionPos);
 
             // 生成路口托盘
-            WayMap wayMap = wayBuilder.regionRailways.get(regionPos);
+            WayMap wayMap = wayBuilder.regionWays.get(regionPos);
             if (wayMap != null) {
                 for (CrossPlanner.CrossGenInfo crossPlace : wayMap.cross) {
                     var cross = crossPlace.crossTemplate();

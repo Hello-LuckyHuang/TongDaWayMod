@@ -10,16 +10,16 @@ import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.placement.InSquarePlacement;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 
-import static com.helloluckyhuang.tongdaway.datagen.ModFeatures.RAILWAY_CONFIGURED_FEATURE_KEY;
+import static com.helloluckyhuang.tongdaway.datagen.ModFeatures.WAY_CONFIGURED_FEATURE_KEY;
 
 
 public class ModPlacements {
-    public static final ResourceKey<PlacedFeature> RAILWAY_PLACED_FEATURE_KEY = ResourceKey.create(
-            Registries.PLACED_FEATURE, ResourceLocation.fromNamespaceAndPath(TongDaWay.MODID, "railway_and_station"));
+    public static final ResourceKey<PlacedFeature> WAY_PLACED_FEATURE_KEY = ResourceKey.create(
+            Registries.PLACED_FEATURE, ResourceLocation.fromNamespaceAndPath(TongDaWay.MODID, "way_and_cross"));
 
     public static void bootstrap(BootstrapContext<PlacedFeature> pContext) {
         HolderGetter<ConfiguredFeature<?, ?>> lookup = pContext.lookup(Registries.CONFIGURED_FEATURE);
-        pContext.register(RAILWAY_PLACED_FEATURE_KEY,
-                new PlacedFeature(lookup.getOrThrow(RAILWAY_CONFIGURED_FEATURE_KEY), java.util.List.of(InSquarePlacement.spread())));
+        pContext.register(WAY_PLACED_FEATURE_KEY,
+                new PlacedFeature(lookup.getOrThrow(WAY_CONFIGURED_FEATURE_KEY), java.util.List.of(InSquarePlacement.spread())));
     }
 }

@@ -17,7 +17,6 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
-// bug: 删除region和tongdaway_data后生成世界卡死
 // 7281290734666671822 4879 90 4001
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
@@ -42,8 +41,8 @@ public class TongDaWay {
 
         modEventBus.addListener(FeatureRegistry::register);
 
-        ModBlocks.register(modEventBus);
-        ModBlockEntities.register(modEventBus);
+//        ModBlocks.register(modEventBus);
+//        ModBlockEntities.register(modEventBus);
 
         modEventBus.addListener(ModDataGen::gatherData);
 
