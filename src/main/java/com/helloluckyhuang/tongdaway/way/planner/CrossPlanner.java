@@ -7,6 +7,8 @@ import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
 import com.helloluckyhuang.tongdaway.util.MyMth;
 import com.helloluckyhuang.tongdaway.util.MyRandom;
+import com.helloluckyhuang.tongdaway.way.WayBuilder;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -118,6 +120,42 @@ public class CrossPlanner {
             result.add(ConnectionGenInfo.getConnectionInfo(thisCross.get(2).placePos.getCenter(), thisCross.get(0).placePos.getCenter()));
         }
 
+        // 连接遗迹
+        var builder = WayBuilder.getInstance(level.getSeed());
+        ChunkGenerator gen = level.getChunkSource().getGenerator();
+        RandomState cfg = level.getChunkSource().randomState();
+        if (builder != null) {
+            List<Pair<String, BlockPos>> structures = builder.regionStructures.get(regionPos);
+            List<Pair<String, BlockPos>> filter = structures.stream()
+                    .filter(p -> p.getFirst().contains("village"))
+                    .toList();
+            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, 2, regionPos.hashCode());
+            for (Pair<String, BlockPos> pair : select) {
+                String name = pair.getFirst();
+                BlockPos bPos = pair.getSecond();
+                Vec3 pos = new Vec3(bPos.getX(), 70, bPos.getZ());
+
+                Vec3 near = null;
+                double dis = Double.MAX_VALUE;
+                for (CrossGenInfo cross : thisCross) {
+                    double d = cross.placePos.getCenter().distanceTo(pos);
+                    if (dis > d) {
+                        dis = d;
+                        near = cross.placePos.getCenter();
+                    }
+                }
+
+                if (near != null) {
+                    Vec3 dir = near.subtract(pos).multiply(1,0,1).normalize();
+                    pos = pos.add(dir.scale(50));
+                    int h = gen.getBaseHeight((int) pos.x, (int) pos.z, Heightmap.Types.WORLD_SURFACE, level, cfg);
+                    pos = new Vec3(pos.x, h, pos.z);
+                    System.out.println("CON :::::::::: " + pos.x + " " + pos.y + " " + pos.z);
+                    result.add(ConnectionGenInfo.getConnectionInfo(near, pos, name));
+                }
+            }
+        }
+
         return result;
     }
 
@@ -155,7 +193,7 @@ public class CrossPlanner {
         return result; // 北 南 西 东
     }
 
-    // 站点放置信息(世界坐标系)
+    // 路口放置信息(世界坐标系)
     public record CrossGenInfo(
             CrossTemplate crossTemplate,
             BlockPos placePos
@@ -190,9 +228,14 @@ public class CrossPlanner {
             Vec3 start,
             Vec3 end,
             int[] connectStart,
-            int[] connectEnd
+            int[] connectEnd,
+            String note
     ) {
         public static ConnectionGenInfo getConnectionInfo(Vec3 A, Vec3 B) {
+            return getConnectionInfo(A, B, "");
+        }
+
+        public static ConnectionGenInfo getConnectionInfo(Vec3 A, Vec3 B, String note) {
                 Vec3 dir = B.subtract(A).normalize();
                 int scale = 30;
                 int[] start = new int[] {
@@ -210,7 +253,8 @@ public class CrossPlanner {
                         A,
                         B,
                         start,
-                        end
+                        end,
+                        note
                 );
             }
         }

@@ -2,8 +2,11 @@ package com.helloluckyhuang.tongdaway.way;
 
 import com.helloluckyhuang.tongdaway.TongDaWay;
 import com.helloluckyhuang.tongdaway.util.SaveWayData;
+import com.mojang.datafixers.util.Pair;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.WorldGenRegion;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -14,7 +17,7 @@ public class WayBuilder {
     private final Map<RegionPos, Future<?>> regionFutures = new ConcurrentHashMap<>();
     public final Map<RegionPos, WayMap> regionWays = new ConcurrentHashMap<>();
     public final Map<RegionPos, int[][]> regionHeightMap = new ConcurrentHashMap<>();
-    public final Map<RegionPos, int[][]> regionStructureMap = new ConcurrentHashMap<>();
+    public final Map<RegionPos, List<Pair<String, BlockPos>>> regionStructures = new ConcurrentHashMap<>();
 
     private final LinkedBlockingQueue<Runnable> regionWayLoadQueue = new LinkedBlockingQueue<Runnable>(); //线程池
     private final ThreadPoolExecutor regionWayLoadPoolExecutor = new ThreadPoolExecutor(64, 1024, 1, TimeUnit.DAYS, regionWayLoadQueue);

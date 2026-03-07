@@ -4,6 +4,7 @@ import com.helloluckyhuang.tongdaway.TongDaWay;
 import com.helloluckyhuang.tongdaway.util.*;
 import com.helloluckyhuang.tongdaway.way.WayBuilder;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
@@ -81,12 +82,29 @@ public class RoutePlanner {
                     continue;
                 RegionPos rPos = new RegionPos(regionPos.x() + i, regionPos.z() + j);
                 WayBuilder builder = WayBuilder.getInstance(level.getSeed());
-                int[][] map;
+                List<Pair<String, BlockPos>> info;
                 if (builder != null) {
-                    map = builder.regionStructureMap
+                    info = builder.regionStructures
                             .computeIfAbsent(rPos, k -> getStructureMap(level,rPos));
                 } else {
-                    map = getStructureMap(level,rPos);
+                    info = getStructureMap(level,rPos);
+                }
+
+                int[][] map = new int[CHUNK_GROUP_SIZE*samplingNum][CHUNK_GROUP_SIZE*samplingNum];
+                for (Pair<String, BlockPos> pair : info) {
+                    BlockPos pos = pair.getSecond();
+                    int[] p = new int[] {
+                            (pos.getX() - regionPos.x()*CHUNK_GROUP_SIZE*16)*samplingNum/16,
+                            (pos.getZ() - regionPos.z()*CHUNK_GROUP_SIZE*16)*samplingNum/16
+                    };
+                    for (int x = -5*samplingNum; x < 5*samplingNum; x++) {
+                        for (int z = -5*samplingNum; z < 5*samplingNum; z++) {
+                            int px = p[0]+x;
+                            int pz = p[1]+z;
+                            if (px > 0 && px < map.length && pz > 0 && pz < map[0].length)
+                                map[px][pz] = 500;
+                        }
+                    }
                 }
                 for (int x = 0; x < map.length; x++) {
                     for (int z = 0; z < map[0].length; z++) {
@@ -114,12 +132,12 @@ public class RoutePlanner {
         });
 
         try {
-            long startTime = System.currentTimeMillis();
+//            long startTime = System.currentTimeMillis();
             // 构建四叉树，区域大小
             sampler.buildQuadTree(CHUNK_GROUP_SIZE*samplingNum);
-            long endTime = System.currentTimeMillis();
+//            long endTime = System.currentTimeMillis();
 //            sampler.printStatistics();
-            TongDaWay.LOGGER.info(" Build HeightMap time: {}ms", endTime - startTime);
+//            TongDaWay.LOGGER.info(" Build HeightMap time: {}ms", endTime - startTime);
         } catch (InterruptedException e) {
             TongDaWay.LOGGER.error("Build HeightMap Err", e);
         } finally {
@@ -131,7 +149,7 @@ public class RoutePlanner {
         return heightMap;
     }
 
-    private int[][] getStructureMap(WorldGenRegion level, RegionPos regionPos) {
+    private List<Pair<String, BlockPos>> getStructureMap(WorldGenRegion level, RegionPos regionPos) {
         // 计算遗迹
         var serverLevel = level.getLevel();
         var registryAccess = level.registryAccess();
@@ -142,7 +160,7 @@ public class RoutePlanner {
         var dimensionType = level.dimensionType();
         LevelHeightAccessor levelHeightAccessor = LevelHeightAccessor.create(dimensionType.minY(), dimensionType.height());
 
-        List<BlockPos> structurePos = new ArrayList<>();
+        List<Pair<String, BlockPos>> structurePos = new ArrayList<>();
 
         try(ExecutorService executor = Executors.newFixedThreadPool(16)) {
             // 创建线程池
@@ -158,11 +176,11 @@ public class RoutePlanner {
                             //计算和连接遗迹
                             serverLevel.getChunkSource().getGenerator().createStructures(registryAccess, chunkGeneratorStructureState, structureManager, protoChunk, structureFeatureManager, serverLevel.dimension());
                             var res = protoChunk.getAllStarts();
-//                            var structureRegistry = registryAccess.registryOrThrow(Registries.STRUCTURE);
+                            var structureRegistry = registryAccess.lookupOrThrow(Registries.STRUCTURE);
                             res.forEach((key, value) -> {
-//                                String structureName = Objects.requireNonNull(structureRegistry.getKey(key)).toString();
+                                String structureName = Objects.requireNonNull(structureRegistry.getKey(key)).toString();
                                 BlockPos pos = new BlockPos(protoChunk.getPos().x * 16, 0, protoChunk.getPos().z * 16);
-                                structurePos.add(pos);
+                                structurePos.add(new Pair<>(structureName, pos));
                             });
                         } finally {
                             latch.countDown();
@@ -179,23 +197,7 @@ public class RoutePlanner {
             TongDaWay.LOGGER.error("Search Feature Err: ", e);
         }
 
-        int[][] costMap = new int[CHUNK_GROUP_SIZE*samplingNum][CHUNK_GROUP_SIZE*samplingNum];
-        for (BlockPos pos : structurePos) {
-            int[] p = new int[] {
-                    (pos.getX() - regionPos.x()*CHUNK_GROUP_SIZE*16)*samplingNum/16,
-                    (pos.getZ() - regionPos.z()*CHUNK_GROUP_SIZE*16)*samplingNum/16
-            };
-            for (int x = -5*samplingNum; x < 5*samplingNum; x++) {
-                for (int z = -5*samplingNum; z < 5*samplingNum; z++) {
-                    int px = p[0]+x;
-                    int pz = p[1]+z;
-                    if (px > 0 && px < costMap.length && pz > 0 && pz < costMap[0].length)
-                        costMap[px][pz] = 500;
-                }
-            }
-        }
-
-        return costMap;
+        return structurePos;
     }
 
     /**
@@ -394,13 +396,15 @@ public class RoutePlanner {
         }
 
         // 连接线路和车站
+        String note = con.note();
+
         Vec3 first = path0.getFirst();
         Vec3 last = path0.getLast();
 
         ResultWay result = new ResultWay(new CurveRoute());
 
         // 车站起点连接
-        result.addLine(level, con.start(), first, "normal");
+        result.addLine(level, con.start(), first, "normal", note);
 
         Vec3 startDir = first.subtract(con.start()).normalize();
         int ii = 0;
@@ -411,7 +415,7 @@ public class RoutePlanner {
                 while (end < path0.size() - 1 && isBridge.get(end)) {
                     end++;
                 }
-                result.addLine(level, path0.get(ii), path0.get(end), "bridge");
+                result.addLine(level, path0.get(ii), path0.get(end), "bridge", note);
                 ii = end;
                 continue;
             }
@@ -424,7 +428,8 @@ public class RoutePlanner {
                     startDir,
                     path0.get(ii+1).subtract(path0.get(ii)),
                     endDir,
-                    "normal"
+                    "normal",
+                    note
             );
             ii++;
 
@@ -432,7 +437,7 @@ public class RoutePlanner {
         }
 
         // 终点车站连接
-        result.addLine(level, last, con.end(), "normal");
+        result.addLine(level, last, con.end(), "normal", note);
 
         return result;
     }
@@ -516,17 +521,17 @@ public class RoutePlanner {
     public record ResultWay(
             CurveRoute way
     ) {
-        public void addLine(ServerLevel level, Vec3 start, Vec3 end, String type) {
+        public void addLine(ServerLevel level, Vec3 start, Vec3 end, String type, String note) {
             String biomeId = BiomeGetter.getBiomeId(level, start);
-            way.addSegment(new CurveRoute.LineSegment(start, end, biomeId, type));
+            way.addSegment(new CurveRoute.LineSegment(start, end, biomeId, type, note));
         }
 
-        public void addBezier(ServerLevel level, Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String type) {
+        public void addBezier(ServerLevel level, Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String type, String note) {
             String biomeId = BiomeGetter.getBiomeId(level, start);
             if (Math.abs(startDir.dot(endDir)) > 0.9999 && startDir.dot(endOffset.normalize()) > 0.9999) {
-                way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biomeId, type));
+                way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biomeId, type, note));
             } else {
-                way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biomeId, type));
+                way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biomeId, type, note));
             }
         }
     }

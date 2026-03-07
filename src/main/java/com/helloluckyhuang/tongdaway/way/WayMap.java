@@ -173,10 +173,10 @@ public class WayMap {
                 int h = gen.getBaseHeight(pos.getX(), pos.getZ(), Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
                 if (pos.getY() < h - 8) continue;
 
-                String showText = "§d§lWay\n"+length+"m \n=> "+totalLength+"m\n§6★";
+                String showText = "§d§lWay\n"+length+"m \n=> "+totalLength+"m\n§6"+(seg.getNote().isEmpty()?"★":seg.getNote());
 
-                String type = i % 8 == 0 ? "sign" : "lamp";
-                String notes = i % 8 == 0 ? showText : "";
+                String type = i % 8 == 1 ? "sign" : "lamp";
+                String notes = i % 8 == 1 ? showText : "";
                 roadFeature.add(new RoadFeature(pos, type, seg.getBiome(), notes));
             }
 

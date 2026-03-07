@@ -22,6 +22,7 @@ public class CurveRoute {
 
         String getBiome();
         String getType();
+        String getNote();
     }
 
     // 内部类：采样点信息
@@ -145,12 +146,14 @@ public class CurveRoute {
         public final Vec3 start, end;
         private final String biome;
         private final String type;
+        private final String note;
 
-        public LineSegment(Vec3 start, Vec3 end, String biome, String type) {
+        public LineSegment(Vec3 start, Vec3 end, String biome, String type, String note) {
             this.start = start;
             this.end = end;
             this.biome = biome;
             this.type = type;
+            this.note = note;
         }
 
         @Override
@@ -189,6 +192,11 @@ public class CurveRoute {
         public String getType() {
             return type;
         }
+
+        @Override
+        public String getNote() {
+            return note;
+        }
     }
 
     // --- 内部实现类：BezierSegment (三阶贝塞尔) ---
@@ -197,11 +205,13 @@ public class CurveRoute {
         public final Vec3 p0, p1, p2, p3;
         private final String biome;
         private final String type;
+        private final String note;
 
-        public BezierSegment(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, String biome, String type) {
+        public BezierSegment(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, String biome, String type, String note) {
             this.p0 = p0; this.p1 = p1; this.p2 = p2; this.p3 = p3;
             this.biome = biome;
             this.type = type;
+            this.note = note;
         }
 
         public static BezierSegment getCubicBezier(
@@ -210,7 +220,8 @@ public class CurveRoute {
                 Vec3 endOffset,          // 终点相对于起点的偏移
                 Vec3 endAxis,            // 终点切线方向
                 String biome,            // 生物环境
-                String type              // 路径类型
+                String type,             // 路径类型
+                String note              // 路径附属信息
         ) {
 //            // 计算终点的绝对坐标
             Vec3 endPos = startPos.add(endOffset);
@@ -229,7 +240,7 @@ public class CurveRoute {
             Vec3 p2 = endPos.add(axis2.scale(handleLength));      // 第二个控制点
             Vec3 p3 = endPos; // 终点
 
-            return new BezierSegment(p0, p1, p2, p3, biome, type);
+            return new BezierSegment(p0, p1, p2, p3, biome, type, note);
         }
 
         private static double determineHandleLength(Vec3 end1, Vec3 end2, Vec3 axis1, Vec3 axis2) {
@@ -332,6 +343,11 @@ public class CurveRoute {
         @Override
         public String getType() {
             return type;
+        }
+
+        @Override
+        public String getNote() {
+            return note;
         }
     }
 
@@ -443,6 +459,7 @@ public class CurveRoute {
                 parameters.add(vec2NBT(line.end));
                 parameters.add(StringTag.valueOf(line.biome));
                 parameters.add(StringTag.valueOf(line.type));
+                parameters.add(StringTag.valueOf(line.note));
             } else if (segment instanceof BezierSegment bezier) {
                 parameters.add(vec2NBT(bezier.p0));
                 parameters.add(vec2NBT(bezier.p1));
@@ -450,6 +467,7 @@ public class CurveRoute {
                 parameters.add(vec2NBT(bezier.p3));
                 parameters.add(StringTag.valueOf(bezier.biome));
                 parameters.add(StringTag.valueOf(bezier.type));
+                parameters.add(StringTag.valueOf(bezier.note));
             }
             curveTag.add(parameters);
         }
@@ -460,20 +478,22 @@ public class CurveRoute {
         CurveRoute curve = new CurveRoute();
         for (int i = 0; i < curveTag.size(); i++) {
             ListTag parameters = curveTag.getListOrEmpty(i);
-            if (parameters.size() == 4) {
+            if (parameters.size() == 5) {
                 Vec3 start = nbt2Vec((ListTag) parameters.get(0));
                 Vec3 end = nbt2Vec((ListTag) parameters.get(1));
                 String biome = parameters.getStringOr(2, "");
                 String type = parameters.getStringOr(3, "");
-                curve.addSegment(new LineSegment(start, end, biome, type));
-            } else if (parameters.size() == 6) {
+                String note = parameters.getStringOr(4, "");
+                curve.addSegment(new LineSegment(start, end, biome, type, note));
+            } else if (parameters.size() == 7) {
                 Vec3 p0 = nbt2Vec((ListTag) parameters.get(0));
                 Vec3 p1 = nbt2Vec((ListTag) parameters.get(1));
                 Vec3 p2 = nbt2Vec((ListTag) parameters.get(2));
                 Vec3 p3 = nbt2Vec((ListTag) parameters.get(3));
                 String biome = parameters.getStringOr(4, "");
                 String type = parameters.getStringOr(5, "");
-                curve.addSegment(new BezierSegment(p0, p1, p2, p3, biome, type));
+                String note = parameters.getStringOr(6, "");
+                curve.addSegment(new BezierSegment(p0, p1, p2, p3, biome, type, note));
             }
         }
         return curve;

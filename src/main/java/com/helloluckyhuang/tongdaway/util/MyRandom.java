@@ -1,9 +1,6 @@
 package com.helloluckyhuang.tongdaway.util;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class MyRandom {
     
@@ -70,5 +67,28 @@ public class MyRandom {
         }
 
         return points;
+    }
+
+    /**
+     * 从集合中随机不重复取出n个元素
+     * @param list 输入集合
+     * @param n 取出元素数
+     * @param seed 种子
+     * @return 取出的元素
+     * @param <T> 元素泛型
+     */
+    public static <T> List<T> pickRandom(List<T> list, int n, long seed) {
+        if (list == null || list.isEmpty() || n <= 0) {
+            return Collections.emptyList();
+        }
+
+        n = Math.min(n, list.size());
+
+        List<T> copy = new ArrayList<>(list);
+        Random random = new Random(seed);
+
+        Collections.shuffle(copy, random);
+
+        return new ArrayList<>(copy.subList(0, n));
     }
 }
