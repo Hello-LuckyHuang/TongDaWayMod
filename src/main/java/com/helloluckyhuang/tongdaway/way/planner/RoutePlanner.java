@@ -94,15 +94,15 @@ public class RoutePlanner {
                 for (Pair<String, BlockPos> pair : info) {
                     BlockPos pos = pair.getSecond();
                     int[] p = new int[] {
-                            (pos.getX() - regionPos.x()*CHUNK_GROUP_SIZE*16)*samplingNum/16,
-                            (pos.getZ() - regionPos.z()*CHUNK_GROUP_SIZE*16)*samplingNum/16
+                            (pos.getX() - rPos.x()*CHUNK_GROUP_SIZE*16)*samplingNum/16,
+                            (pos.getZ() - rPos.z()*CHUNK_GROUP_SIZE*16)*samplingNum/16
                     };
                     for (int x = -5*samplingNum; x < 5*samplingNum; x++) {
                         for (int z = -5*samplingNum; z < 5*samplingNum; z++) {
                             int px = p[0]+x;
                             int pz = p[1]+z;
                             if (px > 0 && px < map.length && pz > 0 && pz < map[0].length)
-                                map[px][pz] = 500;
+                                map[px][pz] = 600 - (Math.abs(x) + Math.abs(z));
                         }
                     }
                 }

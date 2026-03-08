@@ -120,7 +120,8 @@ public class CrossPlanner {
             result.add(ConnectionGenInfo.getConnectionInfo(thisCross.get(2).placePos.getCenter(), thisCross.get(0).placePos.getCenter()));
         }
 
-        // 连接遗迹
+        // 连接遗迹(还需要更加健壮的代码)
+        /*
         var builder = WayBuilder.getInstance(level.getSeed());
         ChunkGenerator gen = level.getChunkSource().getGenerator();
         RandomState cfg = level.getChunkSource().randomState();
@@ -129,7 +130,7 @@ public class CrossPlanner {
             List<Pair<String, BlockPos>> filter = structures.stream()
                     .filter(p -> p.getFirst().contains("village"))
                     .toList();
-            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, 2, regionPos.hashCode());
+            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, 3, regionPos.hashCode());
             for (Pair<String, BlockPos> pair : select) {
                 String name = pair.getFirst();
                 BlockPos bPos = pair.getSecond();
@@ -145,7 +146,7 @@ public class CrossPlanner {
                     }
                 }
 
-                if (near != null) {
+                if (near != null && dis > 500) {
                     Vec3 dir = near.subtract(pos).multiply(1,0,1).normalize();
                     pos = pos.add(dir.scale(50));
                     int h = gen.getBaseHeight((int) pos.x, (int) pos.z, Heightmap.Types.WORLD_SURFACE, level, cfg);
@@ -154,7 +155,7 @@ public class CrossPlanner {
                     result.add(ConnectionGenInfo.getConnectionInfo(near, pos, name));
                 }
             }
-        }
+        }*/
 
         return result;
     }
@@ -237,7 +238,7 @@ public class CrossPlanner {
 
         public static ConnectionGenInfo getConnectionInfo(Vec3 A, Vec3 B, String note) {
                 Vec3 dir = B.subtract(A).normalize();
-                int scale = 30;
+                int scale = 50;
                 int[] start = new int[] {
                         (int) A.add(dir.scale(scale)).x,
                         (int) A.add(dir.scale(scale)).z,

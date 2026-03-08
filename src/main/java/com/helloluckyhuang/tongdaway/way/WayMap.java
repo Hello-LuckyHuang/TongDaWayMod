@@ -1,12 +1,10 @@
 package com.helloluckyhuang.tongdaway.way;
 
-import com.helloluckyhuang.tongdaway.TongDaWay;
 import com.helloluckyhuang.tongdaway.way.planner.RoutePlanner;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
 import com.helloluckyhuang.tongdaway.util.AStarPathfinder;
 import com.helloluckyhuang.tongdaway.util.CurveRoute;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
@@ -15,8 +13,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.phys.Vec2;
@@ -24,9 +20,6 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static com.helloluckyhuang.tongdaway.TongDaWay.CHUNK_GROUP_SIZE;
 
@@ -120,6 +113,10 @@ public class WayMap {
                         return scopeLimit + heightLimit + structLimit;
                     });
 //            test.add(way);
+
+//            ArrayToPNG.saveArrayAsPNG(costMapFindPath, List.of(), "D://测试噪声图//"+regionPos+"costMapFindPath.png");
+//            ArrayToPNG.saveArrayAsPNG(costMap, test, "D://测试噪声图//"+regionPos+"costMap.png");
+
             // 设置出口坐标
             var route = routePlanner.getWay(way, costMap, connection, level);
             putChunk(route);

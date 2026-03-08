@@ -37,15 +37,15 @@ public class MyRandom {
         // 1. 随机生成点的数量 n = 1~3
         int n = random.nextInt(3) + 1;
 
-        // 2. 生成圆心，x, y 在 1/3*range 到 2/3*range 之间
-        int minCenter = range / 3;
-        int maxCenter = 2 * range / 3;
+        // 2. 生成圆心，x, y 在 3/7*range 到 4/7*range 之间
+        int minCenter = 3 * range / 7;
+        int maxCenter = 4 * range / 7;
         int centerX = minCenter + random.nextInt(maxCenter - minCenter + 1);
         int centerY = minCenter + random.nextInt(maxCenter - minCenter + 1);
 
-        // 3. 随机生成半径 r = 1/6*range 到 1/4*range
-        int minRadius = range / 6;
-        int maxRadius = range / 4;
+        // 3. 随机生成半径 r = 1/4*range 到 1/3*range
+        int minRadius = range / 4;
+        int maxRadius = range / 3;
         double radius = minRadius + random.nextDouble() * (maxRadius - minRadius);
 
         // 4. 在圆上生成 n 个点，每个点角度间隔随机 60° 到 360°/n
