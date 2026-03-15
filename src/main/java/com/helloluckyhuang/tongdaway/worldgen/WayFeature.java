@@ -7,7 +7,6 @@ import com.helloluckyhuang.tongdaway.way.WayMap;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
 import com.helloluckyhuang.tongdaway.util.CurveRoute;
-import com.helloluckyhuang.tongdaway.util.MyMth;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -39,7 +38,7 @@ public class WayFeature extends Feature<WayFeatureConfig> {
     @Override
     public boolean place(@NotNull FeaturePlaceContext<WayFeatureConfig> ctx) {
         ChunkPos cPos = new ChunkPos(ctx.origin());
-        RegionPos regionPos = MyMth.regionPosFromChunkPos(cPos);
+        RegionPos regionPos = RegionPos.regionPosFromChunkPos(cPos);
         WorldGenLevel world = ctx.level();
         ChunkAccess chunk = world.getChunk(cPos.x, cPos.z);
 

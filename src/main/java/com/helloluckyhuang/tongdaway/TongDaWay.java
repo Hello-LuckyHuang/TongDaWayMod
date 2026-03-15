@@ -20,6 +20,8 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 // 7281290734666671822 4879 90 4001
 // 6879748347367745519
 // 3545.116076693645 106.0 -991.4331116548378 天路
+// -4432758449943213591
+// 7486 75 -5697 崎岖地形
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(TongDaWay.MODID)

@@ -1,213 +1,33 @@
 package com.helloluckyhuang.tongdaway.way.planner;
 
-import com.helloluckyhuang.tongdaway.TongDaWay;
 import com.helloluckyhuang.tongdaway.util.*;
-import com.helloluckyhuang.tongdaway.way.WayBuilder;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.Tags;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static com.helloluckyhuang.tongdaway.TongDaWay.CHUNK_GROUP_SIZE;
 import static com.helloluckyhuang.tongdaway.TongDaWay.HEIGHT_MAX_INCREMENT;
-import static com.helloluckyhuang.tongdaway.way.WayMap.samplingNum;
 
 
 // 寻路 生成路径曲线
 public class RoutePlanner {
-    private final RegionPos regionPos;
-
-    public RoutePlanner(RegionPos regionPos) {
-        this.regionPos = regionPos;
-    }
-
-    // 获得十字形四向区域的损耗图
-    public int[][] getCostMap(WorldGenRegion level) {
-        int[][] heightMap = new int[CHUNK_GROUP_SIZE*samplingNum*3][CHUNK_GROUP_SIZE*samplingNum*3];
-        for (int[] ints : heightMap) {
-            Arrays.fill(ints, Integer.MAX_VALUE);
-        }
-        for (int i = -1; i < 2; i++) {
-            for (int j = -1; j < 2; j++) {
-                if (Math.abs(i) == 1 && Math.abs(j) == 1)
-                    continue;
-                RegionPos rPos = new RegionPos(regionPos.x() + i, regionPos.z() + j);
-                WayBuilder builder = WayBuilder.getInstance(level.getSeed());
-                int[][] map;
-                if (builder != null) {
-                    map = builder.regionHeightMap
-                            .computeIfAbsent(rPos, k -> getHeightMap(level.getLevel(), rPos));
-                } else {
-                    map = getHeightMap(level.getLevel(), rPos);
-                }
-                for (int x = 0; x < map.length; x++) {
-                    for (int z = 0; z < map[0].length; z++) {
-                        int picX = (i+1)*CHUNK_GROUP_SIZE*samplingNum+x;
-                        int picZ = (j+1)*CHUNK_GROUP_SIZE*samplingNum+z;
-                        heightMap[picX][picZ] = map[x][z];
-                    }
-                }
-            }
-        }
-
-        return heightMap;
-    }
-
-    // 获得十字形四向区域的结构损耗图
-    public int[][] getStructureCostMap(WorldGenRegion level) {
-        int[][] structureMap = new int[CHUNK_GROUP_SIZE*samplingNum*3][CHUNK_GROUP_SIZE*samplingNum*3];
-        for (int[] ints : structureMap) {
-            Arrays.fill(ints, 50000);
-        }
-        for (int i = -1; i < 2; i++) {
-            for (int j = -1; j < 2; j++) {
-                if (Math.abs(i) == 1 && Math.abs(j) == 1)
-                    continue;
-                RegionPos rPos = new RegionPos(regionPos.x() + i, regionPos.z() + j);
-                WayBuilder builder = WayBuilder.getInstance(level.getSeed());
-                List<Pair<String, BlockPos>> info;
-                if (builder != null) {
-                    info = builder.regionStructures
-                            .computeIfAbsent(rPos, k -> getStructureMap(level,rPos));
-                } else {
-                    info = getStructureMap(level,rPos);
-                }
-
-                int[][] map = new int[CHUNK_GROUP_SIZE*samplingNum][CHUNK_GROUP_SIZE*samplingNum];
-                for (Pair<String, BlockPos> pair : info) {
-                    BlockPos pos = pair.getSecond();
-                    int[] p = new int[] {
-                            (pos.getX() - rPos.x()*CHUNK_GROUP_SIZE*16)*samplingNum/16,
-                            (pos.getZ() - rPos.z()*CHUNK_GROUP_SIZE*16)*samplingNum/16
-                    };
-                    for (int x = -5*samplingNum; x < 5*samplingNum; x++) {
-                        for (int z = -5*samplingNum; z < 5*samplingNum; z++) {
-                            int px = p[0]+x;
-                            int pz = p[1]+z;
-                            if (px > 0 && px < map.length && pz > 0 && pz < map[0].length)
-                                map[px][pz] = 600 - (Math.abs(x) + Math.abs(z));
-                        }
-                    }
-                }
-                for (int x = 0; x < map.length; x++) {
-                    for (int z = 0; z < map[0].length; z++) {
-                        int picX = (i+1)*CHUNK_GROUP_SIZE*samplingNum+x;
-                        int picZ = (j+1)*CHUNK_GROUP_SIZE*samplingNum+z;
-                        structureMap[picX][picZ] = map[x][z];
-                    }
-                }
-            }
-        }
-
-        return structureMap;
-    }
-
-    private int[][] getHeightMap(ServerLevel serverLevel, RegionPos regionPos) {
-        // 高度自适应采样地形高度图
-        ChunkGenerator gen = serverLevel.getChunkSource().getGenerator();
-        RandomState cfg = serverLevel.getChunkSource().randomState();
-
-        // 创建采样器：阈值=10，最大层数=3，每个节点4x4采样
-        AdaptiveHeightSampler sampler = new AdaptiveHeightSampler(10, 3, 4, (x, z) -> {
-            int wx = (int) (x*(16.0/samplingNum) + regionPos.x()*CHUNK_GROUP_SIZE*16);
-            int wz = (int) (z*(16.0/samplingNum) + regionPos.z()*CHUNK_GROUP_SIZE*16);
-            return gen.getBaseHeight(wx, wz, Heightmap.Types.WORLD_SURFACE_WG, serverLevel, cfg);
-        });
-
-        try {
-//            long startTime = System.currentTimeMillis();
-            // 构建四叉树，区域大小
-            sampler.buildQuadTree(CHUNK_GROUP_SIZE*samplingNum);
-//            long endTime = System.currentTimeMillis();
-//            sampler.printStatistics();
-//            TongDaWay.LOGGER.info(" Build HeightMap time: {}ms", endTime - startTime);
-        } catch (InterruptedException e) {
-            TongDaWay.LOGGER.error("Build HeightMap Err", e);
-        } finally {
-            sampler.shutdown();
-        }
-
-        int[][] heightMap = sampler.generateImage(CHUNK_GROUP_SIZE*samplingNum, CHUNK_GROUP_SIZE*samplingNum);
-
-        return heightMap;
-    }
-
-    private List<Pair<String, BlockPos>> getStructureMap(WorldGenRegion level, RegionPos regionPos) {
-        // 计算遗迹
-        var serverLevel = level.getLevel();
-        var registryAccess = level.registryAccess();
-        var chunkGeneratorStructureState = serverLevel.getChunkSource().getGeneratorState();
-        var structureManager = serverLevel.structureManager();
-        var structureFeatureManager = serverLevel.getStructureManager();
-
-        var dimensionType = level.dimensionType();
-        LevelHeightAccessor levelHeightAccessor = LevelHeightAccessor.create(dimensionType.minY(), dimensionType.height());
-
-        List<Pair<String, BlockPos>> structurePos = new ArrayList<>();
-
-        try(ExecutorService executor = Executors.newFixedThreadPool(16)) {
-            // 创建线程池
-            CountDownLatch latch = new CountDownLatch(CHUNK_GROUP_SIZE * CHUNK_GROUP_SIZE);
-            for (int gx = 0; gx < CHUNK_GROUP_SIZE; gx++) {
-                for (int gz = 0; gz < CHUNK_GROUP_SIZE; gz++) {
-                    int finalGx = gx;
-                    int finalGz = gz;
-                    executor.execute(() -> {
-                        try {
-                            // 执行任务
-                            var protoChunk = new ProtoChunk(new ChunkPos(regionPos.x() * CHUNK_GROUP_SIZE + finalGx, regionPos.z() * CHUNK_GROUP_SIZE + finalGz), UpgradeData.EMPTY, levelHeightAccessor, serverLevel.palettedContainerFactory(), null);
-                            //计算和连接遗迹
-                            serverLevel.getChunkSource().getGenerator().createStructures(registryAccess, chunkGeneratorStructureState, structureManager, protoChunk, structureFeatureManager, serverLevel.dimension());
-                            var res = protoChunk.getAllStarts();
-                            var structureRegistry = registryAccess.lookupOrThrow(Registries.STRUCTURE);
-                            res.forEach((key, value) -> {
-                                String structureName = Objects.requireNonNull(structureRegistry.getKey(key)).toString();
-                                BlockPos pos = new BlockPos(protoChunk.getPos().x * 16, 0, protoChunk.getPos().z * 16);
-                                structurePos.add(new Pair<>(structureName, pos));
-                            });
-                        } finally {
-                            latch.countDown();
-                        }
-                    });
-                }
-            }
-
-            // 等待所有任务完成
-            latch.await();
-            // 关闭线程池
-            executor.shutdown();
-        } catch (InterruptedException e) {
-            TongDaWay.LOGGER.error("Search Feature Err: ", e);
-        }
-
-        return structurePos;
-    }
-
     /**
      * 规划路径
      * @param way 路线图
+     * @param connectionGenInfo 连接信息
+     * @param world 服务器世界
+     * @return 路径曲线和路线上点
      */
-    public ResultWay getWay(List<int[]> way, int[][] costMap, CrossPlanner.ConnectionGenInfo connectionGenInfo, WorldGenRegion world) {
-        List<int[]> handledHeightWay = handleHeight(way, world.getLevel(), costMap, connectionGenInfo);
-        // 结果转为中心图坐标系
-        handledHeightWay = handledHeightWay.stream().map(AStarPathfinder::pic2RegionPos).toList();
+    public Pair<ResultWay, Set<int[]>> getWay(List<int[]> way, CrossPlanner.ConnectionGenInfo connectionGenInfo, WorldGenRegion world) {
+        List<int[]> handledHeightWay = handleHeight(way, world.getLevel(), connectionGenInfo);
         return connectWay(world, handledHeightWay, connectionGenInfo);
     }
 
@@ -215,8 +35,9 @@ public class RoutePlanner {
      * 测高 处理高度
      * @param path 直行路径(区域内坐标)
      * @param level 服务器世界
+     * @param con 连接信息
      */
-    public List<int[]> handleHeight(List<int[]> path, ServerLevel level, int[][] heightMap, CrossPlanner.ConnectionGenInfo con) {
+    public List<int[]> handleHeight(List<int[]> path, ServerLevel level, CrossPlanner.ConnectionGenInfo con) {
         List<double[]> adPath = new LinkedList<>();
         int seaLevel = level.getSeaLevel();
 
@@ -225,12 +46,10 @@ public class RoutePlanner {
 
         // 测高
         for (int[] p : path) {
-            int l = heightMap.length / 3;
-            int wx = (int) ((p[0]-l)*(16.0/samplingNum) + regionPos.x()*CHUNK_GROUP_SIZE*16);
-            int wz = (int) ((p[1]-l)*(16.0/samplingNum) + regionPos.z()*CHUNK_GROUP_SIZE*16);
+            int wx = p[0];
+            int wz = p[1];
             int h = gen.getBaseHeight(wx, wz, Heightmap.Types.WORLD_SURFACE_WG, level, cfg);
 
-//            int h = heightMap[p[0]][p[1]];
             // 限制高度范围
             h = Math.max(h, seaLevel);
             h = Math.min(h, seaLevel + HEIGHT_MAX_INCREMENT);
@@ -299,10 +118,12 @@ public class RoutePlanner {
 
     /**
      * 将直线路径段通过三阶贝塞尔曲线平滑连接
+     * @param world 服务器世界
      * @param path 路线的端点
-     * @return 连接后的复合曲线
+     * @param con 连接信息
+     * @return 连接后的复合曲线和路线上点
      */
-    private ResultWay connectWay(WorldGenRegion world, List<int[]> path, CrossPlanner.ConnectionGenInfo con) {
+    private Pair<ResultWay, Set<int[]>> connectWay(WorldGenRegion world, List<int[]> path, CrossPlanner.ConnectionGenInfo con) {
         ServerLevel level = world.getLevel();
         ChunkGenerator gen = level.getChunkSource().getGenerator();
         RandomState cfg = level.getChunkSource().randomState();
@@ -310,21 +131,16 @@ public class RoutePlanner {
         // 转换为世界坐标系
         List<Vec3> path0 = new ArrayList<>();
         List<Boolean> isBridge = new ArrayList<>();
+        List<int[]> used = new ArrayList<>();
 
         for (int i = 0; i < path.size() - 12; i+=3) {
             int[] point = path.get(i);
-            path0.add(MyMth.inRegionPos2WorldPos(
-                    regionPos,
-                    new Vec3(point[0], point[2], point[1])
-                            .multiply(16.0/samplingNum, 1, 16.0/samplingNum)
-            ));
+            path0.add(new Vec3(point[0], point[2], point[1]));
+            used.add(point);
         }
 
-        path0.addLast(MyMth.inRegionPos2WorldPos(
-                regionPos,
-                new Vec3(path.getLast()[0], path.getLast()[2], path.getLast()[1])
-                        .multiply(16.0/samplingNum, 1, 16.0/samplingNum)
-        ));
+        path0.addLast(new Vec3(path.getLast()[0], path.getLast()[2], path.getLast()[1]));
+        used.add(path.getLast());
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.OCEAN_FLOOR_WG, level, cfg);
@@ -395,6 +211,15 @@ public class RoutePlanner {
             }
         }
 
+        // 迭代器删除used中isBridge为True的
+        Iterator<int[]> it = used.iterator();
+        while (it.hasNext()) {
+            int[] point = it.next();
+            if (isBridge.get(used.indexOf(point))) {
+                it.remove();
+            }
+        }
+
         // 连接线路和车站
         String note = con.note();
 
@@ -439,7 +264,7 @@ public class RoutePlanner {
         // 终点车站连接
         result.addLine(level, last, con.end(), "normal", note);
 
-        return result;
+        return new Pair<>(result, new HashSet<>(used));
     }
 
     private static List<double[]> adjustmentHeight(List<double[]> path) {

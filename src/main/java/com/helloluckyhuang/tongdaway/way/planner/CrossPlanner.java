@@ -5,10 +5,7 @@ import com.helloluckyhuang.tongdaway.structure.ModStructureManager;
 import com.helloluckyhuang.tongdaway.util.BiomeGetter;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
-import com.helloluckyhuang.tongdaway.util.MyMth;
 import com.helloluckyhuang.tongdaway.util.MyRandom;
-import com.helloluckyhuang.tongdaway.way.WayBuilder;
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -41,7 +38,7 @@ public class CrossPlanner {
         List<CrossGenInfo> result = new ArrayList<>();
         var points = MyRandom.generatePoints(regionSeed, CHUNK_GROUP_SIZE);
         for (int[] pos : points) {
-            ChunkPos chunkPos = new ChunkPos(MyMth.chunkPosXFromRegionPos(regionPos, pos[0]), MyMth.chunkPosZFromRegionPos(regionPos, pos[1]));
+            ChunkPos chunkPos = regionPos.getChunkPos(pos[0], pos[1]);
 
             int x = chunkPos.getBlockX(0);
             int z = chunkPos.getBlockZ(0);
@@ -99,8 +96,8 @@ public class CrossPlanner {
 
         var thisAssignedCross = assignCross(thisCross);
 
-//        var t = thisAssignedCross.getFirst();
-//        TongDaWay.LOGGER.info("====> CrossPlanner: {} {} {} {}", (int)t.x, (int)t.y, (int)t.z, regionPos);
+        var t = thisAssignedCross.getFirst();
+        TongDaWay.LOGGER.info("====> CrossPlanner: {} {} {} {}", (int)t.x, (int)t.y, (int)t.z, regionPos);
 
         var northAssignedExits = assignCross(north);
         var southAssignedExits = assignCross(south);

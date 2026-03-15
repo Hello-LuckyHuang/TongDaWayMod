@@ -3,7 +3,6 @@ package com.helloluckyhuang.tongdaway.mixin;
 import com.helloluckyhuang.tongdaway.structure.CrossTemplate;
 import com.helloluckyhuang.tongdaway.way.WayBuilder;
 import com.helloluckyhuang.tongdaway.way.RegionPos;
-import com.helloluckyhuang.tongdaway.util.MyMth;
 import com.helloluckyhuang.tongdaway.way.WayMap;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
 import net.minecraft.core.BlockPos;
@@ -28,7 +27,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         var dimensionType = level.dimensionType();
         // 只有主世界生成路
         if (dimensionType.effectsLocation().toString().equals("minecraft:overworld")) {
-            RegionPos regionPos = MyMth.regionPosFromChunkPos(chunk.getPos());
+            RegionPos regionPos = RegionPos.regionPosFromChunkPos(chunk.getPos());
 
             WayBuilder wayBuilder = WayBuilder.getInstance(level.getSeed(), level);
             wayBuilder.generateWay(regionPos);

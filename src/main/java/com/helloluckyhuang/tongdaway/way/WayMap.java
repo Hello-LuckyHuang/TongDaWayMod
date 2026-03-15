@@ -1,9 +1,11 @@
 package com.helloluckyhuang.tongdaway.way;
 
+import com.helloluckyhuang.tongdaway.util.MyRandom;
 import com.helloluckyhuang.tongdaway.way.planner.RoutePlanner;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
 import com.helloluckyhuang.tongdaway.util.AStarPathfinder;
 import com.helloluckyhuang.tongdaway.util.CurveRoute;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
@@ -24,8 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.helloluckyhuang.tongdaway.TongDaWay.CHUNK_GROUP_SIZE;
 
 public class WayMap {
-    public static final int samplingNum = 2; // 每个区块的采样数
-
     public final RegionPos regionPos;
 
     //********每个区域的数据*********
@@ -43,85 +43,49 @@ public class WayMap {
 
     // 规划路线方法
     public void startPlanningRoutes(WorldGenRegion level) {
-        /*
-        // 计算遗迹
-        var serverLevel = level.getLevel();
-        var registryAccess = level.registryAccess();
-        var chunkGeneratorStructureState = serverLevel.getChunkSource().getGeneratorState();
-        var structureManager = serverLevel.structureManager();
-        var structureFeatureManager = serverLevel.getStructureManager();
+        var builder = WayBuilder.getInstance(level.getSeed());
+        ChunkGenerator gen = level.getLevel().getChunkSource().getGenerator();
+        RandomState cfg = level.getLevel().getChunkSource().randomState();
 
-        List<String> structures = new ArrayList<>();
-
-        try(ExecutorService executor = Executors.newFixedThreadPool(16)) {
-            // 创建线程池
-            CountDownLatch latch = new CountDownLatch(CHUNK_GROUP_SIZE * CHUNK_GROUP_SIZE);
-            for (int gx = 0; gx < CHUNK_GROUP_SIZE; gx++) {
-                for (int gz = 0; gz < CHUNK_GROUP_SIZE; gz++) {
-                    int finalGx = gx;
-                    int finalGz = gz;
-                    executor.execute(() -> {
-                        try {
-                            // 执行任务
-                            ProtoChunk protoChunk = new ProtoChunk(new ChunkPos(regionPos.x() * CHUNK_GROUP_SIZE + finalGx, regionPos.z() * CHUNK_GROUP_SIZE + finalGz), UpgradeData.EMPTY, serverLevel, serverLevel.palettedContainerFactory(), null);
-                            //计算和连接遗迹
-                            serverLevel.getChunkSource().getGenerator().createStructures(registryAccess, chunkGeneratorStructureState, structureManager, protoChunk, structureFeatureManager, serverLevel.dimension());
-                            var res = protoChunk.getAllStarts();
-                            var structureRegistry = registryAccess.lookupOrThrow(Registries.STRUCTURE);
-                            res.forEach((key, value) -> {
-                                String structureName = Objects.requireNonNull(structureRegistry.getKey(key)).toString();
-//                                BlockPos pos = new BlockPos(protoChunk.getPos().x * 16, 0, protoChunk.getPos().z * 16);
-//                                System.out.println(structureName + " " + pos);
-                                structures.add(structureName);
-                            });
-                        } finally {
-                            latch.countDown();
-                        }
-                    });
-                }
-            }
-
-            // 等待所有任务完成
-            latch.await();
-            // 关闭线程池
-            executor.shutdown();
-        } catch (InterruptedException e) {
-            TongDaWay.LOGGER.error("Search Feature Err: ", e);
-        }*/
-
-        // 生成损耗图
-        RoutePlanner routePlanner = new RoutePlanner(regionPos);
-        int[][] costMap = routePlanner.getCostMap(level);
-        // 寻路专用
-        int[][] costMapFindPath = routePlanner.getStructureCostMap(level);
-
-        // 生成路口位置和连接规划
+        // 路口路线生成
         CrossPlanner crossPlanner = new CrossPlanner(regionPos);
+        RoutePlanner routePlanner = new RoutePlanner();
+
         cross.addAll(CrossPlanner.generateCross(regionPos, level.getLevel(), level.getSeed()));
         var connections = crossPlanner.generateConnections(level.getLevel(), level.getSeed());
         // 生成路线图
-//        List<List<int[]>> test = new ArrayList<>();
+        Set<int[]> points = new HashSet<>();
         for (CrossPlanner.ConnectionGenInfo connection : connections) {
-            // 转为损耗图下坐标系
-            int[] picStart = AStarPathfinder.world2PicPos(connection.connectStart(), regionPos);
-            int[] picEnd = AStarPathfinder.world2PicPos(connection.connectEnd(), regionPos);
-            List<int[]> way = AStarPathfinder.findPath(costMap, picStart, picEnd,
+            int[] picStart = connection.connectStart();
+            int[] picEnd = connection.connectEnd();
+            List<int[]> way = AStarPathfinder.findPath(builder, picStart, Set.of(picEnd), regionPos, 1,
                     (x, y) -> {
                         int scopeLimit = scopeLimit(x, y, picStart, picEnd);
-                        int heightLimit = costMap[x][y] < level.getSeaLevel()+4 ? 100 : 0;
-                        int structLimit = costMapFindPath[x][y];
+                        int heightLimit = builder.getHeight(x, y) < level.getSeaLevel()+4 ? 100 : 0;
+                        int structLimit = builder.getStructureCost(x, y);
                         return scopeLimit + heightLimit + structLimit;
                     });
-//            test.add(way);
-
-//            ArrayToPNG.saveArrayAsPNG(costMapFindPath, List.of(), "D://测试噪声图//"+regionPos+"costMapFindPath.png");
-//            ArrayToPNG.saveArrayAsPNG(costMap, test, "D://测试噪声图//"+regionPos+"costMap.png");
-
-            // 设置出口坐标
-            var route = routePlanner.getWay(way, costMap, connection, level);
+            // 生成路径
+            var result = routePlanner.getWay(way, connection, level);
+            points.addAll(result.getSecond());
+            var route = result.getFirst();
             putChunk(route);
             // 生成路径上的地物
             genRoadFeature(route, level.getLevel());
+        }
+
+        if (builder != null) {
+            List<Pair<String, BlockPos>> structures = builder.regionStructures.get(regionPos);
+            List<Pair<String, BlockPos>> filter = structures.stream()
+                    .filter(p -> p.getFirst().contains("village"))
+                    .toList();
+            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, 3, regionPos.hashCode());
+            for (Pair<String, BlockPos> pair : select) {
+                String name = pair.getFirst();
+                BlockPos bPos = pair.getSecond();
+                int h = gen.getBaseHeight(bPos.getX(), bPos.getZ(), Heightmap.Types.WORLD_SURFACE, level, cfg);
+                Vec3 pos = new Vec3(bPos.getX(), h, bPos.getZ());
+            }
         }
     }
 
@@ -184,11 +148,11 @@ public class WayMap {
     private static int scopeLimit(int x, int z, int[] picStart, int[] picEnd) {
         // 限制寻路区域
         int maxCost = 10000; // 区域外消耗
-        int A = 96;  // 限制区域最大宽度
+        int A = 320;  // 限制区域最大宽度
 
         double length = new Vec2(picEnd[0]-picStart[0], picEnd[1]-picStart[1]).length();
 
-        Vec3 p = new Vec3(x, 0, z);
+        Vec3 p = new Vec3(x-picStart[0], 0, z-picStart[1]);
 
         Vec3 va = new Vec3(picEnd[0]-picStart[0], 0, picEnd[1]-picStart[1]).normalize();
         Vec3 vert = new Vec3(0, 1, 0);
