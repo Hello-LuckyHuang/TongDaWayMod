@@ -1,6 +1,5 @@
 package com.helloluckyhuang.tongdaway.way;
 
-import com.helloluckyhuang.tongdaway.util.ArrayToPNG;
 import com.helloluckyhuang.tongdaway.util.MyRandom;
 import com.helloluckyhuang.tongdaway.way.planner.RoutePlanner;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
@@ -56,7 +55,7 @@ public class WayMap {
         var connections = crossPlanner.generateConnections(level.getLevel(), level.getSeed());
         // 生成路线图
         Map<Integer, int[]> points = new HashMap<>();
-        List<Set<int[]>> test = new ArrayList<>();
+//        List<Set<int[]>> test = new ArrayList<>();
         for (CrossPlanner.ConnectionGenInfo connection : connections) {
             int[] picStart = connection.connectStart();
             int[] picEnd = connection.connectEnd();
@@ -70,7 +69,7 @@ public class WayMap {
             // 生成路径
             var result = routePlanner.getWay(way, connection, level);
             result.getSecond().forEach(p -> points.put(p[0]*31+p[1], p));
-            test.add(new HashSet<>(result.getSecond()));
+//            test.add(new HashSet<>(result.getSecond()));
             var route = result.getFirst();
             putChunk(route);
             // 生成路径上的地物
@@ -115,21 +114,21 @@ public class WayMap {
                 var result = routePlanner.getWay(way, connection, level);
                 result.getSecond().forEach(p -> points.put(p[0]*31+p[1], p));
                 var route = result.getFirst();
-                test.add(new HashSet<>(result.getSecond()));
+//                test.add(new HashSet<>(result.getSecond()));
                 putChunk(route);
                 // 生成路径上的地物
                 genRoadFeature(route, level.getLevel());
-                System.out.println(end[0] + " " + end[2] + " " + end[1]);
+//                System.out.println(end[0] + " " + end[2] + " " + end[1]);
             }
         }
-        for (Set<int[]> ints : test) {
-            for (int[] anInt : ints) {
-                anInt[0] = (anInt[0] - (regionPos.x()-1) * CHUNK_GROUP_SIZE * 16)/8;
-                anInt[1] = (anInt[1] - (regionPos.z()-1) * CHUNK_GROUP_SIZE * 16)/8;
-            }
-        }
+//        for (Set<int[]> ints : test) {
+//            for (int[] anInt : ints) {
+//                anInt[0] = (anInt[0] - (regionPos.x()-1) * CHUNK_GROUP_SIZE * 16)/8;
+//                anInt[1] = (anInt[1] - (regionPos.z()-1) * CHUNK_GROUP_SIZE * 16)/8;
+//            }
+//        }
 
-        ArrayToPNG.saveArrayAsPNG(new int[2048*3/8][2048*3/8], test, "D:\\测试噪声图\\"+regionPos+".png");
+//        ArrayToPNG.saveArrayAsPNG(new int[2048*3/8][2048*3/8], test, "D:\\测试噪声图\\"+level.getSeed()+"_"+regionPos+".png");
     }
 
     /**
