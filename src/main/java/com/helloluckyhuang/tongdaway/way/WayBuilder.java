@@ -148,7 +148,7 @@ public class WayBuilder {
         AdaptiveHeightSampler sampler = new AdaptiveHeightSampler(10, 3, 4, (x, z) -> {
             int wx = (int) (x*(16.0/samplingNum) + regionPos.x()*CHUNK_GROUP_SIZE*16);
             int wz = (int) (z*(16.0/samplingNum) + regionPos.z()*CHUNK_GROUP_SIZE*16);
-            return gen.getBaseHeight(wx, wz, Heightmap.Types.WORLD_SURFACE_WG, serverLevel, cfg);
+            return gen.getBaseHeight(wx, wz, Heightmap.Types.OCEAN_FLOOR_WG, serverLevel, cfg);
         });
 
         try {

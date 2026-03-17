@@ -1,5 +1,6 @@
 package com.helloluckyhuang.tongdaway.way;
 
+import com.helloluckyhuang.tongdaway.util.ArrayToPNG;
 import com.helloluckyhuang.tongdaway.util.MyRandom;
 import com.helloluckyhuang.tongdaway.way.planner.RoutePlanner;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
@@ -54,7 +55,8 @@ public class WayMap {
         cross.addAll(CrossPlanner.generateCross(regionPos, level.getLevel(), level.getSeed()));
         var connections = crossPlanner.generateConnections(level.getLevel(), level.getSeed());
         // 生成路线图
-        Set<int[]> points = new HashSet<>();
+        Map<Integer, int[]> points = new HashMap<>();
+        List<Set<int[]>> test = new ArrayList<>();
         for (CrossPlanner.ConnectionGenInfo connection : connections) {
             int[] picStart = connection.connectStart();
             int[] picEnd = connection.connectEnd();
@@ -67,26 +69,67 @@ public class WayMap {
                     });
             // 生成路径
             var result = routePlanner.getWay(way, connection, level);
-            points.addAll(result.getSecond());
+            result.getSecond().forEach(p -> points.put(p[0]*31+p[1], p));
+            test.add(new HashSet<>(result.getSecond()));
             var route = result.getFirst();
             putChunk(route);
             // 生成路径上的地物
             genRoadFeature(route, level.getLevel());
         }
 
+        // 连接结构
         if (builder != null) {
             List<Pair<String, BlockPos>> structures = builder.regionStructures.get(regionPos);
             List<Pair<String, BlockPos>> filter = structures.stream()
                     .filter(p -> p.getFirst().contains("village"))
                     .toList();
-            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, 3, regionPos.hashCode());
+            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, 5, regionPos.hashCode());
             for (Pair<String, BlockPos> pair : select) {
                 String name = pair.getFirst();
                 BlockPos bPos = pair.getSecond();
-                int h = gen.getBaseHeight(bPos.getX(), bPos.getZ(), Heightmap.Types.WORLD_SURFACE, level, cfg);
-                Vec3 pos = new Vec3(bPos.getX(), h, bPos.getZ());
+                int[] start = new int[] {bPos.getX(), bPos.getZ()};
+                List<int[]> way = AStarPathfinder.findPath(builder, start, new HashSet<>(points.values()), regionPos, 0,
+                        (x, y) -> {
+                            int heightLimit = builder.getHeight(x, y) < level.getSeaLevel()+4 ? 100 : 0;
+                            int structLimit = builder.getStructureCost(x, y);
+                            return heightLimit + structLimit;
+                        });
+                if (way.size() < 50)
+                    continue;
+
+                way.subList(0, 10).clear();
+                // 生成路径
+                start = way.getFirst();
+                int[] end = points.get(way.getLast()[0]*31+way.getLast()[1]);
+
+                int h = gen.getBaseHeight(start[0], start[1], Heightmap.Types.WORLD_SURFACE, level, cfg);
+                Vec3 startPos = new Vec3(start[0], h, start[1]);
+
+                CrossPlanner.ConnectionGenInfo connection = new CrossPlanner.ConnectionGenInfo(
+                        startPos,
+                        new Vec3(end[0], end[2], end[1]),
+                        new int[] {(int) startPos.x, (int) startPos.z, (int) startPos.y},
+                        end,
+                        name
+                );
+                var result = routePlanner.getWay(way, connection, level);
+                result.getSecond().forEach(p -> points.put(p[0]*31+p[1], p));
+                var route = result.getFirst();
+                test.add(new HashSet<>(result.getSecond()));
+                putChunk(route);
+                // 生成路径上的地物
+                genRoadFeature(route, level.getLevel());
+                System.out.println(end[0] + " " + end[2] + " " + end[1]);
             }
         }
+        for (Set<int[]> ints : test) {
+            for (int[] anInt : ints) {
+                anInt[0] = (anInt[0] - (regionPos.x()-1) * CHUNK_GROUP_SIZE * 16)/8;
+                anInt[1] = (anInt[1] - (regionPos.z()-1) * CHUNK_GROUP_SIZE * 16)/8;
+            }
+        }
+
+        ArrayToPNG.saveArrayAsPNG(new int[2048*3/8][2048*3/8], test, "D:\\测试噪声图\\"+regionPos+".png");
     }
 
     /**

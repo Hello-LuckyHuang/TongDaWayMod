@@ -1,7 +1,6 @@
 package com.helloluckyhuang.tongdaway.way.planner;
 
 import com.helloluckyhuang.tongdaway.util.*;
-import com.helloluckyhuang.tongdaway.way.RegionPos;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -136,11 +135,9 @@ public class RoutePlanner {
         for (int i = 0; i < path.size() - 12; i+=3) {
             int[] point = path.get(i);
             path0.add(new Vec3(point[0], point[2], point[1]));
-            used.add(point);
         }
 
         path0.addLast(new Vec3(path.getLast()[0], path.getLast()[2], path.getLast()[1]));
-        used.add(path.getLast());
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.OCEAN_FLOOR_WG, level, cfg);
@@ -211,15 +208,6 @@ public class RoutePlanner {
             }
         }
 
-        // 迭代器删除used中isBridge为True的
-        Iterator<int[]> it = used.iterator();
-        while (it.hasNext()) {
-            int[] point = it.next();
-            if (isBridge.get(used.indexOf(point))) {
-                it.remove();
-            }
-        }
-
         // 连接线路和车站
         String note = con.note();
 
@@ -228,7 +216,7 @@ public class RoutePlanner {
 
         ResultWay result = new ResultWay(new CurveRoute());
 
-        // 车站起点连接
+        // 路口起点连接
         result.addLine(level, con.start(), first, "normal", note);
 
         Vec3 startDir = first.subtract(con.start()).normalize();
@@ -261,8 +249,15 @@ public class RoutePlanner {
             startDir = endDir.reverse();
         }
 
-        // 终点车站连接
+        // 终点路口连接
         result.addLine(level, last, con.end(), "normal", note);
+
+        for (CurveRoute.CurveSegment segment : result.way.getSegments()) {
+            if (segment instanceof CurveRoute.BezierSegment bez)
+                used.add(new int[] {(int) bez.p0.x, (int) bez.p0.z, (int) bez.p0.y});
+            else if (segment instanceof CurveRoute.LineSegment line)
+                used.add(new int[] {(int) line.start.x, (int) line.start.z, (int) line.start.y});
+        }
 
         return new Pair<>(result, new HashSet<>(used));
     }
@@ -347,15 +342,23 @@ public class RoutePlanner {
             CurveRoute way
     ) {
         public void addLine(ServerLevel level, Vec3 start, Vec3 end, String type, String note) {
+            if ((start.subtract(end)).length() < 0.1)
+                return;
             String biomeId = BiomeGetter.getBiomeId(level, start);
             way.addSegment(new CurveRoute.LineSegment(start, end, biomeId, type, note));
         }
 
         public void addBezier(ServerLevel level, Vec3 start, Vec3 startDir, Vec3 endOffset, Vec3 endDir, String type, String note) {
+            if (endOffset.length() < 0.1)
+                return;
             String biomeId = BiomeGetter.getBiomeId(level, start);
             if (Math.abs(startDir.dot(endDir)) > 0.9999 && startDir.dot(endOffset.normalize()) > 0.9999) {
                 way.addSegment(new CurveRoute.LineSegment(start, start.add(endOffset), biomeId, type, note));
             } else {
+                if (startDir.equals(new Vec3(0, 0, 0)))
+                    startDir = endOffset.normalize();
+                if (endDir.equals(new Vec3(0, 0, 0)))
+                    endDir = endOffset.normalize().reverse();
                 way.addSegment(CurveRoute.BezierSegment.getCubicBezier(start, startDir, endOffset, endDir, biomeId, type, note));
             }
         }
