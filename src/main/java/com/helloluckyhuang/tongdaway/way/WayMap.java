@@ -96,9 +96,10 @@ public class WayMap {
                 int[] start = new int[] {bPos.getX(), bPos.getZ()};
                 List<int[]> way = AStarPathfinder.findPath(builder, start, new HashSet<>(points.values()), regionPos, 0,
                         (x, y) -> {
+                            int scopeLimit = scopeLimitBorder(x, y);
                             int heightLimit = builder.getHeight(x, y) < level.getSeaLevel()+4 ? 100 : 0;
                             int structLimit = builder.getStructureCost(x, y);
-                            return heightLimit + structLimit;
+                            return scopeLimit + heightLimit + structLimit;
                         });
                 if (way.size() < 50)
                     continue;
@@ -218,6 +219,23 @@ public class WayMap {
             return maxCost;
 
         return 0;
+    }
+
+    public static int scopeLimitBorder(int x, int z) {
+        if (isNearBorder(x) || isNearBorder(z)) {
+            return 1000;
+        }
+        return 0;
+    }
+
+    private static boolean isNearBorder(int n) {
+        int border = CHUNK_GROUP_SIZE * 16;
+        int remainder = n % border;
+        // 处理负数情况
+        if (remainder < 0) {
+            remainder += border;
+        }
+        return remainder <= 5 || remainder >= border - 5;
     }
 
     public CompoundTag toNBT() {
