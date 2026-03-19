@@ -1,0 +1,7 @@
+{
+  "class": "road",
+  "type": "tunnel",
+  "template": "tongdaway:road/wood_tunnel_0",
+  "height_offset": 0,
+  "tags": ["default"]
+}

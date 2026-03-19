@@ -1,0 +1,7 @@
+{
+  "class": "road",
+  "type": "ground",
+  "template": "tongdaway:road/normal_wet_path_0",
+  "height_offset": 3,
+  "tags": ["c:is_wet"]
+}
