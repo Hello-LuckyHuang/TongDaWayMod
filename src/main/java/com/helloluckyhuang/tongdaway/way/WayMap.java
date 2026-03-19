@@ -1,5 +1,6 @@
 package com.helloluckyhuang.tongdaway.way;
 
+import com.helloluckyhuang.tongdaway.Config;
 import com.helloluckyhuang.tongdaway.util.MyRandom;
 import com.helloluckyhuang.tongdaway.way.planner.RoutePlanner;
 import com.helloluckyhuang.tongdaway.way.planner.CrossPlanner;
@@ -80,9 +81,12 @@ public class WayMap {
         if (builder != null) {
             List<Pair<String, BlockPos>> structures = builder.regionStructures.get(regionPos);
             List<Pair<String, BlockPos>> filter = structures.stream()
-                    .filter(p -> p.getFirst().contains("village"))
+                    .filter(p ->
+                            (Config.alwaysConnectVillage&&p.getFirst().contains("village"))
+                            || Config.features.contains(p.getFirst())
+                    )
                     .toList();
-            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, 5, regionPos.hashCode());
+            List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, Config.connectFeaturesNum, regionPos.hashCode());
             for (Pair<String, BlockPos> pair : select) {
                 String name = pair.getFirst();
                 BlockPos bPos = pair.getSecond();
