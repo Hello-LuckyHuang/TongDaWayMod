@@ -140,7 +140,7 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
     // 随机获取用于生成的结构模板
     public static CrossTemplate getRandomNormalCross(long seed, String... tags) {
         String type = "normal";
-        return cross.get(84_269 + seed*10000, type, tags);
+        return cross.get(75_457 + seed*10000, type, tags);
 
 //     System.arraycopy(tags, 0, tagArray, 1, tags.length);
     }
@@ -157,12 +157,12 @@ public class ModStructureManager extends SimpleJsonResourceReloadListener<JsonEl
 
     public static RoadTemplate getRandomTunnel(long seed, String... tags) {
         String type = "tunnel";
-        return roadbed.get(71_1553 + seed*10000, type, tags);
+        return roadbed.get(90_114 + seed*10000, type, tags);
     }
 
     public static RoadTemplate getRandomShortBridge(long seed, String... tags) {
         String type = "short_bridge";
-        return roadbed.get(71_1553 + seed*10000, type, tags);
+        return roadbed.get(90_8006 + seed*10000, type, tags);
     }
 
     public static BridgeTemplate getRandomBridge(long seed, String... tags) {
