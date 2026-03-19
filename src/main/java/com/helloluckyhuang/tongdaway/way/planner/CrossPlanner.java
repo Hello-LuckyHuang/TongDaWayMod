@@ -97,7 +97,7 @@ public class CrossPlanner {
         var thisAssignedCross = assignCross(thisCross);
 
         var t = thisAssignedCross.getFirst();
-        TongDaWay.LOGGER.info("====> CrossPlanner: {} {} {} {}", (int)t.x, (int)t.y, (int)t.z, regionPos);
+//        TongDaWay.LOGGER.info("====> CrossPlanner: {} {} {} {}", (int)t.x, (int)t.y, (int)t.z, regionPos);
 
         var northAssignedExits = assignCross(north);
         var southAssignedExits = assignCross(south);

@@ -152,12 +152,12 @@ public class WayBuilder {
         });
 
         try {
-            long startTime = System.currentTimeMillis();
+//            long startTime = System.currentTimeMillis();
             // 构建四叉树，区域大小
             sampler.buildQuadTree(CHUNK_GROUP_SIZE*samplingNum);
-            long endTime = System.currentTimeMillis();
+//            long endTime = System.currentTimeMillis();
 //            sampler.printStatistics();
-            TongDaWay.LOGGER.info(" Region {} Build HeightMap time: {}ms", regionPos, endTime - startTime);
+//            TongDaWay.LOGGER.info(" Region {} Build HeightMap time: {}ms", regionPos, endTime - startTime);
         } catch (InterruptedException e) {
             TongDaWay.LOGGER.error("Build HeightMap Err", e);
         } finally {
