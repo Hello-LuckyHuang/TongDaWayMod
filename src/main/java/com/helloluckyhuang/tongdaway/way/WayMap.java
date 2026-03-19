@@ -89,6 +89,9 @@ public class WayMap {
             List<Pair<String, BlockPos>> select = MyRandom.pickRandom(filter, Config.connectFeaturesNum, regionPos.hashCode());
             for (Pair<String, BlockPos> pair : select) {
                 String name = pair.getFirst();
+                if (name.contains(":"))
+                    name = name.split(":")[1];
+                name = name.replace("_", " ");
                 BlockPos bPos = pair.getSecond();
                 int[] start = new int[] {bPos.getX(), bPos.getZ()};
                 List<int[]> way = AStarPathfinder.findPath(builder, start, new HashSet<>(points.values()), regionPos, 0,
