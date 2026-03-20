@@ -11,7 +11,7 @@ public class MyRandom {
      * @return 点的集合，每个点是 int[2]，表示 (x, y)
      */
     public static List<int[]> generatePoints(long seed, int range) {
-        Random random = new Random(seed);
+        Random random = new Random(75_1050 + seed);
         List<int[]> points = new ArrayList<>();
 
         // 1. 随机生成点的数量 n = 1~3
