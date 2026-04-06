@@ -1,0 +1,7 @@
+{
+  "class": "cross",
+  "type": "underground",
+  "template": "tongdaway:cross/underground_cross_0",
+  "height_offset": 1,
+  "tags": ["default"]
+}

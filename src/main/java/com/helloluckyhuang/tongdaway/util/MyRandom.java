@@ -1,0 +1,74 @@
+package com.helloluckyhuang.tongdaway.util;
+
+import java.util.*;
+
+public class MyRandom {
+    /**
+     * 生成随机点
+     *
+     * @param seed  随机种子
+     * @param range 坐标范围
+     * @return 点的集合，每个点是 int[2]，表示 (x, y)
+     */
+    public static List<int[]> generatePoints(long seed, int range) {
+        Random random = new Random(75_1050 + seed);
+        List<int[]> points = new ArrayList<>();
+
+        // 1. 随机生成点的数量 n = 1~3
+        int n = random.nextInt(3) + 1;
+
+        // 2. 生成圆心，x, y 在 3/7*range 到 4/7*range 之间
+        int minCenter = 3 * range / 7;
+        int maxCenter = 4 * range / 7;
+        int centerX = minCenter + random.nextInt(maxCenter - minCenter + 1);
+        int centerY = minCenter + random.nextInt(maxCenter - minCenter + 1);
+
+        // 3. 随机生成半径 r = 1/4*range 到 1/3*range
+        int minRadius = range / 4;
+        int maxRadius = range / 3;
+        double radius = minRadius + random.nextDouble() * (maxRadius - minRadius);
+
+        // 4. 在圆上生成 n 个点，每个点角度间隔随机 60° 到 360°/n
+        double angle = 0;
+        for (int i = 0; i < n; i++) {
+            // 随机间隔角度
+            double maxAngleStep = 360.0 / n;
+            double angleStep = 60 + random.nextDouble() * (maxAngleStep - 60);
+            angle += angleStep;
+
+            // 转换为弧度
+            double rad = Math.toRadians(angle);
+
+            // 计算点坐标
+            int x = centerX + (int) Math.round(radius * Math.cos(rad));
+            int y = centerY + (int) Math.round(radius * Math.sin(rad));
+
+            points.add(new int[]{x, y});
+        }
+
+        return points;
+    }
+
+    /**
+     * 从集合中随机不重复取出n个元素
+     * @param list 输入集合
+     * @param n 取出元素数
+     * @param seed 种子
+     * @return 取出的元素
+     * @param <T> 元素泛型
+     */
+    public static <T> List<T> pickRandom(List<T> list, int n, long seed) {
+        if (list == null || list.isEmpty() || n <= 0) {
+            return Collections.emptyList();
+        }
+
+        n = Math.min(n, list.size());
+
+        List<T> copy = new ArrayList<>(list);
+        Random random = new Random(seed);
+
+        Collections.shuffle(copy, random);
+
+        return new ArrayList<>(copy.subList(0, n));
+    }
+}

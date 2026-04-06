@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "tongdaway:way_and_cross",
+  "step": "underground_ores"
+}

@@ -1,0 +1,7 @@
+{
+  "class": "road",
+  "type": "short_bridge",
+  "template": "tongdaway:road/wood_short_bridge_0",
+  "height_offset": 2,
+  "tags": ["default"]
+}

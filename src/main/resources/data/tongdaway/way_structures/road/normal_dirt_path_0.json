@@ -1,0 +1,7 @@
+{
+  "class": "road",
+  "type": "ground",
+  "template": "tongdaway:road/normal_dirt_path_0",
+  "height_offset": 2,
+  "tags": ["default"]
+}
