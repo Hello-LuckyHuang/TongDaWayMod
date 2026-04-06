@@ -47,11 +47,11 @@ public class BiomeGetter {
                 ));
     }
 
-    public static String[] getBiomeTags(Holder<Biome> biome, String name) {
+    public static String[] getBiomeTags(Holder<Biome> biome) {
         List<String> list = new java.util.ArrayList<>(biome.tags().map(TagKey::location).toList().stream().map(ResourceLocation::toString).toList());
         // 由于本版本没有is_ocean标签，所以这里根据名字手动添加
-        if (name.contains("ocean")) {
-            list.add("c:is_ocean");
+        if (list.contains("minecraft:is_ocean")) {
+            list.add("minecraft:is_ocean");
         }
         return list.toArray(String[]::new);
     }

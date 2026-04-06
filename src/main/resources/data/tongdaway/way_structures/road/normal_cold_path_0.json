@@ -3,5 +3,5 @@
   "type": "ground",
   "template": "tongdaway:road/normal_cold_path_0",
   "height_offset": 2,
-  "tags": ["c:is_cold"]
+  "tags": ["forge:is_cold"]
 }

@@ -141,8 +141,8 @@ public class RoutePlanner {
 
         for (Vec3 p : path0) {
             int h = gen.getBaseHeight((int) p.x, (int) p.z, Heightmap.Types.OCEAN_FLOOR_WG, level, cfg);
-            var biome = BiomeGetter.getBiome(level, p);
-            isBridge.add(!biome.is(Tags.Biomes.IS_WATER) && (p.y - h > 5));
+            var biome = BiomeGetter.getBiomeId(level, p);
+            isBridge.add(!biome.contains("ocean") && (p.y - h > 5));
         }
 
         int n = isBridge.size();

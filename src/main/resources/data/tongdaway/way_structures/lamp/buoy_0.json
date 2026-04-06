@@ -3,5 +3,5 @@
   "type": "lamp",
   "template": "tongdaway:lamp/buoy_0",
   "height_offset": 2,
-  "tags": ["c:is_ocean"]
+  "tags": ["minecraft:is_ocean"]
 }

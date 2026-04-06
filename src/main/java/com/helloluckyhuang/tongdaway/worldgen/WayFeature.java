@@ -27,6 +27,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.Tags;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public class WayFeature extends Feature<WayFeatureConfig> {
@@ -63,7 +64,7 @@ public class WayFeature extends Feature<WayFeatureConfig> {
             var type = feature.type();
 
             var biome = BiomeGetter.getBiomeFromId(feature.biomeId(), world.getLevel());
-            var tags = BiomeGetter.getBiomeTags(biome, feature.biomeId());
+            var tags = BiomeGetter.getBiomeTags(biome);
 
             RoadFeatureTemplate lamp = ModStructureManager.roadFeature.get(seed, type, tags);
             if (lamp.getBoundChunks(center).contains(cPos)) {
@@ -194,14 +195,14 @@ public class WayFeature extends Feature<WayFeatureConfig> {
                     // 随机获取一个路基，使用路线段数作为种子来选择
                     RoadTemplate structureTemplate;
                     if (type.equals("bridge")) {
-                        structureTemplate = ModStructureManager.getRandomBridge(seed, BiomeGetter.getBiomeTags(biome, biomeIdString));
+                        structureTemplate = ModStructureManager.getRandomBridge(seed, BiomeGetter.getBiomeTags(biome));
                     } else {
                         if (conditionBridge) {
-                            structureTemplate = ModStructureManager.getRandomShortBridge(seed, BiomeGetter.getBiomeTags(biome, biomeIdString));
+                            structureTemplate = ModStructureManager.getRandomShortBridge(seed, BiomeGetter.getBiomeTags(biome));
                         } else if (conditionTunnel) {
-                            structureTemplate = ModStructureManager.getRandomTunnel(seed, BiomeGetter.getBiomeTags(biome, biomeIdString));
+                            structureTemplate = ModStructureManager.getRandomTunnel(seed, BiomeGetter.getBiomeTags(biome));
                         } else {
-                            structureTemplate = ModStructureManager.getRandomGround(seed, BiomeGetter.getBiomeTags(biome, biomeIdString));
+                            structureTemplate = ModStructureManager.getRandomGround(seed, BiomeGetter.getBiomeTags(biome));
                         }
                     }
 

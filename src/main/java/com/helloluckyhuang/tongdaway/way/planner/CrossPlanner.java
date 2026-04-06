@@ -65,7 +65,7 @@ public class CrossPlanner {
 
             String biomeId = BiomeGetter.getBiomeId(level, new Vec3(x, y, z));
             var biome = BiomeGetter.getBiomeFromId(biomeId, level);
-            String[] tags = BiomeGetter.getBiomeTags(biome, biomeId);
+            String[] tags = BiomeGetter.getBiomeTags(biome);
 
             // 根据高度决定生成地上还是地下车站
             CrossTemplate cross;

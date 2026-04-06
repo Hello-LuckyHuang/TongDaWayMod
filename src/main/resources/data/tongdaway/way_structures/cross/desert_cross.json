@@ -3,5 +3,5 @@
   "type": "normal",
   "template": "tongdaway:cross/desert_cross_0",
   "height_offset": 0,
-  "tags": ["c:is_desert", "c:is_hot"]
+  "tags": ["minecraft:is_desert", "forge:is_hot"]
 }

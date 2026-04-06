@@ -3,5 +3,5 @@
   "type": "normal",
   "template": "tongdaway:cross/sea_cross",
   "height_offset": 0,
-  "tags": ["c:is_ocean"]
+  "tags": ["minecraft:is_ocean"]
 }
