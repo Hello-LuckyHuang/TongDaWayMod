@@ -171,7 +171,7 @@ public class WayFeature extends Feature<WayFeatureConfig> {
                     String biomeIdString = seg.getBiome();
                     Holder<Biome> biome = BiomeGetter.getBiomeFromId(biomeIdString, world.getLevel());
 
-                    if (biome.is(Tags.Biomes.IS_WATER)) continue;
+                    if (biomeIdString.contains("ocean")) continue;
 
                     var nearest0 = frame.nearestPoint;
 
