@@ -19,16 +19,13 @@ import java.util.List;
 public class BiomeGetter {
     public static Holder<Biome> getBiome(ServerLevel level, Vec3 pos) {
         ChunkGenerator gen = level.getChunkSource().getGenerator();
-        var randomState = RandomState.create(
-                ((NoiseBasedChunkGenerator) gen).generatorSettings().value(),
-                level.registryAccess().lookupOrThrow(Registries.NOISE),
-                level.getSeed()
-        );
+        RandomState cfg = level.getChunkSource().randomState();
+
         return gen.getBiomeSource().getNoiseBiome(
                 QuartPos.fromBlock((int) pos.x),
                 QuartPos.fromBlock((int) pos.y),
                 QuartPos.fromBlock((int) pos.z),
-                randomState.sampler()
+                cfg.sampler()
         );
     }
 
